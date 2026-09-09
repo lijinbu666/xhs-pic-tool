@@ -631,7 +631,7 @@ try {
   /* ===== 占位符样式设置 ===== */
   .style-section { margin-top: 12px; padding: 10px 10px 4px; border-radius: 8px; background: #f6f8fc; border: 1px solid var(--border); }
   .style-subtitle {
-    font-size: 11px; font-weight: 700; color: var(--brand-700); margin: 8px 0 6px;
+    font-size: 11px; font-weight: 700; color: var(--brand-700); margin: 10px 0 6px; padding-top: 6px; border-top: 1px dashed var(--border, #e5e7eb);
     text-transform: uppercase; letter-spacing: .6px;
   }
   .style-subtitle:first-child { margin-top: 0; }
@@ -1103,7 +1103,7 @@ try {
               </div>
               <div class="ctrl-group">
                 <label>高</label>
-                <input type="number" id="phH" step="0.1" oninput="onPhInput('h')" readonly>
+                <input type="number" id="phH" step="0.1" oninput="onPhInput('h')">
               </div>
             </div>
             <!-- 样式设置 -->
@@ -1716,6 +1716,53 @@ const BUILTIN_TEMPLATES = [
 function exportTemplates() {
   const list = loadCustomTemplates();
   if (list.length === 0) { toast('还没有自定义模板可以导出', 'info'); return; }
+  if (list.length === 1) { _doExportTemplates(list); return; }
+  // 多选弹窗
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;';
+  div.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:20px 24px;max-width:460px;width:92%;max-height:80vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;font-size:15px;">选择要导出的模板（${list.length} 个）</h3>
+        <button onclick="this.closest('div[style*=inset]').remove()" style="border:none;background:none;cursor:pointer;font-size:20px;color:#999;">×</button>
+      </div>
+      <div id="exportTplList"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button onclick="_doExportTemplatesFromList()" style="flex:1;padding:9px 0;background:linear-gradient(120deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">导出勾选的 <span id="exportCount">${list.length}</span> 个</button>
+        <button onclick="this.closest('div[style*=inset]').remove()" style="padding:9px 18px;background:#f0f2f7;border:none;border-radius:8px;font-weight:600;cursor:pointer;color:#666;">取消</button>
+      </div>
+    </div>`;
+  const listDiv = div.querySelector('#exportTplList');
+  list.forEach((t, i) => {
+    const chk = document.createElement('label');
+    chk.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;cursor:pointer;';
+    chk.innerHTML = `<input type="checkbox" data-idx="${i}" checked style="width:16px;height:16px;accent-color:#667eea;">
+      <div><div style="font-weight:600;font-size:13px;">${t.name}</div><div style="font-size:11px;color:#999;">${(t.placeholders||[]).length} 图位 · ${new Date().toISOString().slice(0,10)}</div></div>`;
+    listDiv.appendChild(chk);
+  });
+  div.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
+    const cnt = div.querySelectorAll('input[type=checkbox]:checked').length;
+    div.querySelector('#exportCount').textContent = cnt;
+  }));
+  document.body.appendChild(div);
+  window._exportDiv = div;
+}
+
+function _doExportTemplatesFromList() {
+  const div = window._exportDiv;
+  if (!div) return;
+  const list = loadCustomTemplates();
+  const chosen = [];
+  div.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    if (cb.checked) chosen.push(list[+cb.dataset.idx]);
+  });
+  div.remove();
+  window._exportDiv = null;
+  if (chosen.length === 0) { toast('请至少勾选一个模板', 'info'); return; }
+  _doExportTemplates(chosen);
+}
+
+function _doExportTemplates(list) {
   const payload = { _xhsTemplateFormat: 1, toolVersion: TOOL_VERSION, exportedAt: new Date().toISOString(), templates: list };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -2215,11 +2262,15 @@ function applyZoom() {
     wrap.style.transformOrigin = 'top left';
     wrap.style.transform = `scale(${z})`;
   }
-  // 让占位容器占满缩放后的实际尺寸，滚动条才能覆盖全部区域
-  if (spacer && wrap) {
-    const nw = wrap.offsetWidth, nh = wrap.offsetHeight;
-    spacer.style.width = Math.round(nw * z) + 'px';
-    spacer.style.height = Math.round(nh * z) + 'px';
+  // 缓存未缩放尺寸：避免 offsetWidth 返回 pre-transform 或 after-transform 的不稳定值
+  // 初次调用时 zoom=1，此时 wrap.offsetWidth 是原始尺寸；之后用缓存值计算 spacer
+  if (wrap && !wrap._baseW) {
+    wrap._baseW = wrap.offsetWidth;
+    wrap._baseH = wrap.offsetHeight;
+  }
+  if (spacer && wrap && wrap._baseW) {
+    spacer.style.width = Math.round(wrap._baseW * z) + 'px';
+    spacer.style.height = Math.round(wrap._baseH * z) + 'px';
   }
   const lbl = document.getElementById('zoomLabel');
   if (lbl) lbl.textContent = Math.round(z * 100) + '%';
@@ -2401,6 +2452,10 @@ function updatePhProps() {
   }
   props.style.display = 'block';
   if (actionPanel) actionPanel.style.display = 'block';
+  // 自由比例占位符的高度输入框可编辑，16:9 等比例占位符高度由宽度联动
+  const _phH = document.getElementById('phH');
+  if (_phH) _phH.readOnly = !ph.free_ratio;
+
   // 多选对齐块：仅当选中>=2个占位符时显示
   if (groupBlock) groupBlock.style.display = state.editor.selectedPHs.length >= 2 ? 'block' : 'none';
   const ph = state.editor.template.placeholders[idx];
@@ -2739,13 +2794,13 @@ function onPhInput(changed) {
     ph.x = isNaN(v) ? 0 : v;
     ph.y = isNaN(vY) ? 0 : vY;
     if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW || 5)); if (!ph.free_ratio) enforceRatio(ph, true); }
-    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH || minH); if (!ph.free_ratio) enforceRatio(ph, false); }
+    else if (changed === 'h') { if (ph.free_ratio) { ph.height = Math.max(2, vH || 2); } else { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH || minH); if (!ph.free_ratio) enforceRatio(ph, false); } }
   } else {
     // cm -> pct
     ph.x = isNaN(v) ? 0 : (v * state.pxPerCm / dim.w * 100);
     ph.y = isNaN(vY) ? 0 : (vY * state.pxPerCm / dim.h * 100);
     if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW * state.pxPerCm / dim.w * 100 || 5)); if (!ph.free_ratio) enforceRatio(ph, true); }
-    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH * state.pxPerCm / dim.h * 100 || minH); if (!ph.free_ratio) enforceRatio(ph, false); }
+    else if (changed === 'h') { if (ph.free_ratio) { ph.height = Math.max(2, vH * state.pxPerCm / dim.h * 100 || 2); } else { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH * state.pxPerCm / dim.h * 100 || minH); if (!ph.free_ratio) enforceRatio(ph, false); } }
   }
   renderEditor();
 }
