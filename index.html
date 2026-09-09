@@ -2342,6 +2342,9 @@ function deselectPH() {
 }
 
 function buildRulers(w, h) {
+  // 画布尺寸变更时 invalidate zoom 缓存
+  const _wrap = document.getElementById('canvasWrap');
+  if (_wrap) { _wrap._baseW = null; _wrap._baseH = null; }
   const rulerH = document.getElementById('rulerH');
   const rulerV = document.getElementById('rulerV');
   rulerH.style.width = w + 'px';
@@ -3075,11 +3078,17 @@ function openPreview(si) {
   state.previewSet = si;
   const s = pvSet();
   if (!s || !s.pages.length) { toast('请先生成预览', 'info'); return; }
-  document.getElementById('previewModal').classList.add('show');
-  document.getElementById('previewCount').textContent = s.pages.length;
-  document.getElementById('previewSetTitle').textContent = s.name;
-  renderPreviewThumbs();
-  selectPage(0);
+  try {
+    document.getElementById('previewModal').classList.add('show');
+    document.getElementById('previewCount').textContent = s.pages.length;
+    document.getElementById('previewSetTitle').textContent = s.name;
+    renderPreviewThumbs();
+    selectPage(0);
+  } catch (e) {
+    console.error('[openPreview]', e);
+    toast('打开预览失败: ' + e.message, 'error');
+    document.getElementById('previewModal').classList.remove('show');
+  }
 }
 
 function closePreview() {
