@@ -378,7 +378,7 @@ try {
   }
   .ruler-h {
     height: 28px; background: var(--bg-hover); border-bottom: 1px solid var(--border-strong);
-    position: relative; margin-left: 44px; border-radius: var(--r-sm) var(--r-sm) 0 0;
+    position: relative; border-radius: var(--r-sm) var(--r-sm) 0 0;
   }
   .ruler-v {
     width: 44px; background: var(--bg-hover); border-right: 1px solid var(--border-strong);
@@ -538,8 +538,25 @@ try {
 
   /* ===== 右侧控件面板 ===== */
   .editor-controls {
-    width: 268px; border-left: 1px solid var(--border); padding: 18px 16px;
+    width: 268px; border-left: 1px solid var(--border); padding: 12px 12px;
     overflow-y: auto; flex-shrink: 0; background: var(--bg-surface);
+  }
+  .ctrl-section {
+    background: var(--bg-soft, #f6f8fc);
+    border-radius: 10px;
+    padding: 12px 12px 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border, #e5e7eb);
+  }
+  .ctrl-section.section-info { background: #f0f4ff; border-color: #d0dcf0; }
+  .ctrl-section.section-placeholder { background: #fdf6f0; border-color: #f0e0d0; }
+  .ctrl-section.section-style { background: #f6f8fc; border-color: #e0e6f0; }
+  .ctrl-section.section-text { background: #f0fff4; border-color: #d0f0dc; }
+  .ctrl-section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--text-3, #666); text-transform: uppercase;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border, #e5e7eb);
   }
   .ctrl-group { margin-bottom: 13px; }
   .ctrl-group label {
@@ -612,9 +629,9 @@ try {
   .ph-prop-row .ctrl-group { flex: 1; }
 
   /* ===== 占位符样式设置 ===== */
-  .style-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .style-section { margin-top: 12px; padding: 10px 10px 4px; border-radius: 8px; background: #f6f8fc; border: 1px solid var(--border); }
   .style-subtitle {
-    font-size: 11px; font-weight: 700; color: var(--brand-700); margin: 10px 0 6px;
+    font-size: 11px; font-weight: 700; color: var(--brand-700); margin: 8px 0 6px;
     text-transform: uppercase; letter-spacing: .6px;
   }
   .style-subtitle:first-child { margin-top: 0; }
@@ -1034,6 +1051,9 @@ try {
         </div>
       </div>
       <div class="editor-controls">
+        <!-- 基础信息 -->
+        <div class="ctrl-section section-info">
+          <div class="ctrl-section-title">基础信息</div>
         <div class="ctrl-group">
           <label>模板名称</label>
           <input type="text" id="tplName" placeholder="模板名称">
@@ -1053,6 +1073,9 @@ try {
         <button class="btn-add-ph" onclick="addPlaceholder()">+ 添加图片占位符 (16:9)</button>
         <button class="btn-add-ph" onclick="addPlaceholderFree()" title="宽高可自由设置">+ 添加自由占位符</button>
         <button class="btn-add-ph btn-add-text" onclick="addTextBox()">+ 添加文本框</button>
+        </div>  <!-- /基础信息 -->
+        <!-- 占位符属性（选中占位符后显示） -->
+        <div class="ctrl-section section-placeholder">
         <div id="phProps" style="display:none;">
           <div class="ctrl-group">
             <label>选中占位符（16:9 等比例）</label>
@@ -1299,19 +1322,12 @@ const IS_OFFLINE = location.protocol === 'file:';
 
 function checkUpdate() {
   if (IS_OFFLINE) return;
-  if (localStorage.getItem('xhs_update_ack') === TOOL_VERSION) return;
   fetch(REMOTE_VERSION_URL + '?v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.ok ? r.json() : null)
     .then(data => {
-      if (!data || !data.version || data.version === TOOL_VERSION) return;
-      if (data.version > TOOL_VERSION) {
-        var banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);';
-        banner.innerHTML =
-          '<span>🔔 发现新版本 v' + data.version + '（你当前 v' + TOOL_VERSION + '）</span>' +
-          '<a href="' + (data.url || REMOTE_VERSION_URL.replace('/version.json','/')) + '" target="_blank" style="color:#fff;background:rgba(255,255,255,.25);padding:5px 12px;border-radius:6px;text-decoration:none;font-weight:600;">在线版一键更新</a>' +
-          '<button onclick="this.parentElement.remove();localStorage.setItem(\'xhs_update_ack\',\'' + data.version + '\')" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;">知道了</button>';
-        document.body.appendChild(banner);
+      if (data && data.version && data.version > TOOL_VERSION) {
+        // 静默记录：不弹窗、不打断用户；在线版刷新即生效，离线版下次下载 zip 即可
+        try { localStorage.setItem('xhs_seen_newest', data.version); } catch(e) {}
       }
     })
     .catch(function() {});
