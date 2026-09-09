@@ -11,7 +11,7 @@
    - 哈希是 64 位十六进制字符串，不含口令明文，查看源码看不到口令
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
-const CURRENT_PASSWORD_HASH = '1176c004772090090a7c36db55d62a6b24ddcdb1a7f9721b569e7546e4671c14';
+const CURRENT_PASSWORD_HASH = '5fd577515eed261f437670fc5b4d531aea7953991b067745d24c28217245c82f';
 // 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
 try {
   if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
