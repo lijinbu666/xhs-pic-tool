@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -925,6 +925,9 @@ try {
     <div class="panel tpl-panel">
       <div class="tpl-toolbar">
         <h2 style="margin:0"><span class="num">2</span> 模板库</h2>
+        <button class="btn-new-tpl" onclick="exportTemplates()" title="导出全部自定义模板">📦 导出</button>
+        <button class="btn-new-tpl" onclick="document.getElementById('__tplImport').click()" title="导入 .xhs-tpl 文件">📥 导入</button>
+        <input type="file" id="__tplImport" accept=".json,.xhs-tpl" style="display:none" onchange="importTemplates(event)">
         <button class="btn-new-tpl" onclick="openEditor(null)">+ 新建</button>
       </div>
       <div class="tpl-scroll">
@@ -1283,9 +1286,38 @@ try {
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+
   else init();
 })();
 /* === 口令门结束 === */
+
+// ==== 版本号与自动更新检查 ====
+const TOOL_VERSION = '1.1.0';
+const REMOTE_VERSION_URL = 'https://xhs-pic-tool.pages.dev/version.json';
+const IS_OFFLINE = location.protocol === 'file:';
+
+function checkUpdate() {
+  if (IS_OFFLINE) return;
+  if (localStorage.getItem('xhs_update_ack') === TOOL_VERSION) return;
+  fetch(REMOTE_VERSION_URL + '?v=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !data.version || data.version === TOOL_VERSION) return;
+      if (data.version > TOOL_VERSION) {
+        var banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);';
+        banner.innerHTML =
+          '<span>🔔 发现新版本 v' + data.version + '（你当前 v' + TOOL_VERSION + '）</span>' +
+          '<a href="' + (data.url || REMOTE_VERSION_URL.replace('/version.json','/')) + '" target="_blank" style="color:#fff;background:rgba(255,255,255,.25);padding:5px 12px;border-radius:6px;text-decoration:none;font-weight:600;">在线版一键更新</a>' +
+          '<button onclick="this.parentElement.remove();localStorage.setItem(\'xhs_update_ack\',\'' + data.version + '\')" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;">知道了</button>';
+        document.body.appendChild(banner);
+      }
+    })
+    .catch(function() {});
+}
+setTimeout(checkUpdate, 2000);
+
+
 
 // ====== 全局状态 ======
 const state = {
@@ -1663,6 +1695,46 @@ const BUILTIN_TEMPLATES = [
     ],
   },
 ];
+
+function exportTemplates() {
+  const list = loadCustomTemplates();
+  if (list.length === 0) { toast('还没有自定义模板可以导出', 'info'); return; }
+  const payload = { _xhsTemplateFormat: 1, toolVersion: TOOL_VERSION, exportedAt: new Date().toISOString(), templates: list };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `小红书模板_${new Date().toISOString().slice(0,10)}.xhs-tpl`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`已导出 ${list.length} 个自定义模板`);
+}
+
+function importTemplates(evt) {
+  const file = evt.target.files && evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let tpls;
+      if (Array.isArray(data)) tpls = data;                    // 旧版纯数组兼容
+      else if (Array.isArray(data.templates)) tpls = data.templates;
+      else { toast('文件格式不对，不是模板导出文件', 'error'); return; }
+      const valid = tpls.filter(t => t && typeof t === 'object' && t.name && Array.isArray(t.placeholders));
+      if (valid.length === 0) { toast('文件里没有有效的模板', 'error'); return; }
+      const existing = loadCustomTemplates();
+      const map = new Map();
+      existing.forEach(t => map.set(t.id, t));
+      valid.forEach(t => { t.id = t.id || ('custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8)); map.set(t.id, { ...t }); });
+      saveCustomTemplates([...map.values()]);
+      loadTemplates();
+      toast(`成功导入 ${valid.length} 个模板`);
+    } catch (err) { toast('文件解析失败：' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
 
 function loadCustomTemplates() {
   try {
@@ -2579,6 +2651,15 @@ function addPlaceholder() {
   commitHistory();
 }
 
+function addPlaceholderFree() {
+  const ph = { x: 10, y: 10, width: 60, height: 60, free_ratio: true, scale_mode: 'cover', ...defaultPhStyle() };
+  state.editor.template.placeholders.push(ph);
+  state.editor.selectedPH = state.editor.template.placeholders.length - 1;
+  state.editor.selectedPHs = [state.editor.selectedPH];
+  renderEditor();
+  commitHistory();
+}
+
 function deletePlaceholder() {
   const idxs = state.editor.selectedPHs && state.editor.selectedPHs.length
     ? [...state.editor.selectedPHs].sort((a, b) => b - a)
@@ -2614,6 +2695,7 @@ function canvasDim() {
 }
 
 function enforceRatio(ph, fromW) {
+  if (ph.free_ratio) return;
   const dim = canvasDim();
   const canvasRatio = dim.w / dim.h; // 画布宽高比
   if (fromW) {
@@ -2639,14 +2721,14 @@ function onPhInput(changed) {
   if (unit === '%') {
     ph.x = isNaN(v) ? 0 : v;
     ph.y = isNaN(vY) ? 0 : vY;
-    if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW || 5)); enforceRatio(ph, true); }
-    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH || minH); enforceRatio(ph, false); }
+    if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW || 5)); if (!ph.free_ratio) enforceRatio(ph, true); }
+    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH || minH); if (!ph.free_ratio) enforceRatio(ph, false); }
   } else {
     // cm -> pct
     ph.x = isNaN(v) ? 0 : (v * state.pxPerCm / dim.w * 100);
     ph.y = isNaN(vY) ? 0 : (vY * state.pxPerCm / dim.h * 100);
-    if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW * state.pxPerCm / dim.w * 100 || 5)); enforceRatio(ph, true); }
-    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH * state.pxPerCm / dim.h * 100 || minH); enforceRatio(ph, false); }
+    if (changed === 'w') { ph.width = Math.max(5, Math.min(100, vW * state.pxPerCm / dim.w * 100 || 5)); if (!ph.free_ratio) enforceRatio(ph, true); }
+    else if (changed === 'h') { const minH = 5 * (dim.w/dim.h) / PH_RATIO; ph.height = Math.max(minH, vH * state.pxPerCm / dim.h * 100 || minH); if (!ph.free_ratio) enforceRatio(ph, false); }
   }
   renderEditor();
 }
@@ -2823,7 +2905,7 @@ function onResizeMove(e) {
     newW = Math.min(newW, start.x + start.width); // 不超过右边界
   }
   ph.width = +newW.toFixed(2);
-  enforceRatio(ph, true);
+  if (!ph.free_ratio) enforceRatio(ph, true);
   const newH = ph.height;
 
   // 根据手柄调整位置

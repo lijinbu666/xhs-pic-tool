@@ -1,0 +1,5 @@
+{
+  "version": "1.1.0",
+  "url": "https://xhs-pic-tool.pages.dev/",
+  "changelog": "新增：模板导入导出、自由比例占位符、自动更新检测；修复：模板保存失败（名称双向绑定）"
+}
