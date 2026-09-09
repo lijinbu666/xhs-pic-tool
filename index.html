@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -2054,6 +2054,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ====== 模板编辑器快捷键 ======
 document.addEventListener('DOMContentLoaded', () => {
+  // 模板名称输入框 → state.editor.template.name 实时同步
+  const _tplName = document.getElementById('tplName');
+  if (_tplName) _tplName.addEventListener('input', e => { state.editor.template.name = e.target.value; });
   document.addEventListener('keydown', e => {
     const overlay = document.getElementById('editorOverlay');
     if (!overlay || !overlay.classList.contains('show')) return; // 仅模板编辑器打开时生效
