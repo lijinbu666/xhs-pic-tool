@@ -3367,7 +3367,11 @@ async function exportAllFolder() {
   } catch (err) {
     if (err && err.name === 'AbortError') { statusEl.textContent = ''; return; }
     statusEl.textContent = '';
-    toast('保存失败: ' + err.message, 'error');
+    // 常见：Chrome showDirectoryPicker 拒绝含系统文件的文件夹（如桌面、我的文档）
+    // 此时自动降级为 ZIP 下载，不让用户白跑一趟
+    console.warn('[exportAllFolder] 文件夹写入失败，自动降级 ZIP:', err);
+    toast('该文件夹无法直接写入（可能含系统文件或权限不足），已改为 ZIP 下载', 'info', 4000);
+    return exportAllZip();
   }
 }
 
