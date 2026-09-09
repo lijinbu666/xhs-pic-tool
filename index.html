@@ -12,6 +12,12 @@
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
 const CURRENT_PASSWORD_HASH = '34491aeca314d1382257e67520e54ec982f55f7b1ad791ae02ddf3a845f88f0b';
+// 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
+try {
+  if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
+    document.documentElement.classList.add('gate-authed');
+  }
+} catch(_) {}
 </script>
 <style>
   /* ============================================================
@@ -799,6 +805,8 @@ const CURRENT_PASSWORD_HASH = '34491aeca314d1382257e67520e54ec982f55f7b1ad791ae0
   #accessGate.hidden {
     opacity: 0; visibility: hidden; pointer-events: none;
   }
+  /* 会话命中（localStorage 哈希与当前一致）：首屏直接移除，无过渡、无闪烁 */
+  html.gate-authed #accessGate { display: none; }
   .gate-card {
     width: 380px; max-width: calc(100vw - 48px);
     background: #fff; border-radius: 16px;
