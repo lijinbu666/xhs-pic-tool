@@ -11,7 +11,10 @@
    - 哈希是 64 位十六进制字符串，不含口令明文，查看源码看不到口令
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
-const CURRENT_PASSWORD_HASH = '37a120aeb2110e0b41f8132e77fbc78082bb59fbaf8dc3552fcd5100306de679';
+const CURRENT_PASSWORD_HASH = '361437d715cf8a56b52fc2fc15074ab38cfdb85cbfc72d98afc228cf9e5317bd';
+// 模板库解锁码（单独发放给购买模板库的买家，与月度口令不同）
+// 月更方式同口令：用「口令生成器」里的模板库解锁码生成器算出新哈希，替换本行后重新部署
+const CURRENT_LIB_HASH = '5e7bc691d45ebce69f1c2e77ad6e8ed04af5a0f2d660fe20cba181f395268b0f';
 // 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
 try {
   if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
@@ -200,6 +203,81 @@ try {
   .btn-edit:hover { background: var(--brand-50); color: var(--brand-700); }
   .btn-del { background: var(--red-100); color: var(--red-700); }
   .btn-del:hover { background: var(--red-500); color: #fff; }
+
+  /* ===== 模板库分级（basic 基础 / full 模板库，未解锁带锁展示） ===== */
+  /* 模板库解锁入口按钮 */
+  .btn-lib {
+    padding: 7px 13px; border: none; border-radius: var(--r-md); cursor: pointer;
+    background: linear-gradient(120deg, #f6ad55, #ed8936); color: #fff;
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 8px rgba(237,137,54,.3);
+    transition: all var(--ease); white-space: nowrap;
+  }
+  .btn-lib:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .btn-lib-ok {
+    padding: 7px 13px; border: 1px solid #c6f6d5; border-radius: var(--r-md); cursor: default;
+    background: #f0fff4; color: #2f855a; font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  /* 未解锁的模板库卡片：预览可看、点击拦截 */
+  .tpl-card.locked { border-style: dashed; border-color: #f6ad55; background: #fffdf8; }
+  .tpl-card.locked:hover { border-color: #ed8936; box-shadow: var(--shadow-sm); transform: none; }
+  .tpl-card.locked .tpl-preview { filter: grayscale(.1) brightness(.9); }
+  .tpl-lock-badge {
+    position: absolute; top: 5px; left: 5px; z-index: 2;
+    background: rgba(194,104,24,.92); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; gap: 2px; white-space: nowrap;
+  }
+  .tpl-lock-mask {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,247,237,.28));
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .tpl-lock-mask span {
+    font-size: 22px; filter: drop-shadow(0 1px 2px rgba(255,255,255,.9));
+  }
+  .tpl-card.locked .tname { color: #9c6a35; }
+
+  /* 模板库解锁弹窗 */
+  .lib-overlay {
+    position: fixed; inset: 0; z-index: 1200; display: none;
+    background: rgba(17,24,39,.5); backdrop-filter: blur(2px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .lib-overlay.show { display: flex; }
+  .lib-box {
+    background: var(--bg-surface); border-radius: var(--r-xl);
+    width: 100%; max-width: 380px; padding: 26px 24px 22px;
+    box-shadow: var(--shadow-lg); text-align: center;
+  }
+  .lib-logo {
+    width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 16px;
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    display: flex; align-items: center; justify-content: center; font-size: 26px;
+  }
+  .lib-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .lib-box p.sub { font-size: 12.5px; color: var(--text-3); margin: 0 0 16px; line-height: 1.6; }
+  .lib-input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border-strong);
+    border-radius: var(--r-md); font-size: 15px; text-align: center;
+    letter-spacing: 1px; outline: none; font-family: inherit;
+  }
+  .lib-input:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+  .lib-input.error { border-color: var(--red-500); animation: libShake .35s; }
+  @keyframes libShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .lib-err { min-height: 18px; margin-top: 7px; font-size: 12.5px; color: var(--red-600); }
+  .lib-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .lib-btn-primary {
+    flex: 1; padding: 11px 0; border: none; border-radius: var(--r-md);
+    background: linear-gradient(120deg, #f6ad55, #ed8936); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .lib-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+  .lib-btn-cancel {
+    padding: 11px 18px; border: none; border-radius: var(--r-md);
+    background: var(--bg-hover); color: var(--text-2); font-size: 14px; cursor: pointer;
+  }
+  .lib-foot { margin-top: 14px; font-size: 12px; color: var(--text-3); line-height: 1.6; }
 
   /* ===== 右列 ===== */
   .right-col { overflow-y: auto; padding: 0 2px 10px 0; }
@@ -1003,6 +1081,7 @@ try {
         <button class="btn-new-tpl" onclick="document.getElementById('__tplImport').click()" title="导入 .xhs-tpl 文件">📥 导入</button>
         <input type="file" id="__tplImport" accept=".json,.xhs-tpl" style="display:none" onchange="importTemplates(event)">
         <button class="btn-new-tpl" onclick="openEditor(null)">+ 新建</button>
+        <button id="btnLibUnlock" onclick="openLibUnlock()" style="display:none"></button>
       </div>
       <div class="tpl-scroll">
         <div class="tpl-grid" id="tplGrid"></div>
@@ -1341,6 +1420,25 @@ try {
   </div>
 </div>
 
+<!-- 模板库解锁弹窗 -->
+<div class="lib-overlay" id="libUnlockModal" role="dialog" aria-label="模板库解锁">
+  <div class="lib-box">
+    <div class="lib-logo">🔒</div>
+    <h3>解锁模板库</h3>
+    <p class="sub">模板库包含更多精美模板。<br>输入购买后获取的“模板库解锁码”即可全部使用。</p>
+    <form id="libUnlockForm" autocomplete="off">
+      <input type="text" id="libUnlockCode" class="lib-input" placeholder="请输入解锁码"
+             autocomplete="off" spellcheck="false" autocapitalize="none">
+      <div class="lib-err" id="libUnlockErr"></div>
+      <div class="lib-actions">
+        <button type="button" class="lib-btn-cancel" id="libUnlockCancel">取消</button>
+        <button type="submit" class="lib-btn-primary" id="libUnlockBtn">立即解锁</button>
+      </div>
+    </form>
+    <div class="lib-foot">没有解锁码？请联系卖家获取。<br>解锁码与月度口令是两组不同的码。</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1418,7 +1516,7 @@ try {
 /* === 口令门结束 === */
 
 // ==== 版本号与自动更新检查 ====
-const TOOL_VERSION = '1.1.0';
+const TOOL_VERSION = '1.2.0';
 const REMOTE_VERSION_URL = 'https://xhs-pic-tool.pages.dev/version.json';
 const IS_OFFLINE = location.protocol === 'file:';
 
@@ -1843,13 +1941,42 @@ function removeImage(idx) { state.images.splice(idx, 1); renderImages(); updateG
 
 // ====== 模板库（内置模板 + 浏览器本地保存自定义模板） ======
 const TPL_STORE_KEY = 'xhs_templates_v1';
+// 内置模板归属：library='basic' 基础模板（买工具即有）；library='full' 模板库模板（需解锁码）
+const LIB_LS_KEY = 'xhs_lib_unlocked';
+
+// 内置图片占位符的统一样式（位置尺寸按百分比传入）
+function _builtinPh(x, y, w, h) {
+  return { borderColor: '#667eea', borderOpacity: 0, fillColor: '#667eea', fillOpacity: 12, fontSize: 48, fontWeight: 'bold', height: h, scale_mode: 'cover', shadowBlur: 0, shadowColor: '#000000', shadowOpacity: 0, shadowX: 0, shadowY: 0, text: '双击编辑文字', textAlign: 'center', textColor: '#333333', textOpacity: 100, textShadowBlur: 0, textShadowColor: '#000000', textShadowOpacity: 0, textShadowX: 0, textShadowY: 0, width: w, x: x, y: y };
+}
+
 const BUILTIN_TEMPLATES = [
   {
-    id: 'single_9_16', name: '三图竖排 9:16', ratio: '9:16', background_color: '#FFFFFF', builtin: true,
+    id: 'single_9_16', name: '三图竖排 9:16', ratio: '9:16', background_color: '#FFFFFF', builtin: true, library: 'basic',
     placeholders: [
       { borderColor: '#667eea', borderOpacity: 0, fillColor: '#667eea', fillOpacity: 12, fontSize: 48, fontWeight: 'bold', height: 29.88, scale_mode: 'cover', shadowBlur: 0, shadowColor: '#000000', shadowOpacity: 0, shadowX: 0, shadowY: 0, text: '双击编辑文字', textAlign: 'center', textColor: '#333333', textOpacity: 100, textShadowBlur: 0, textShadowColor: '#000000', textShadowOpacity: 0, textShadowX: 0, textShadowY: 0, width: 94.45, x: 2.77, y: 3.54 },
       { borderColor: '#667eea', borderOpacity: 0, fillColor: '#667eea', fillOpacity: 12, fontSize: 48, fontWeight: 'bold', height: 29.88, scale_mode: 'cover', shadowBlur: 0, shadowColor: '#000000', shadowOpacity: 0, shadowX: 0, shadowY: 0, text: '双击编辑文字', textAlign: 'center', textColor: '#333333', textOpacity: 100, textShadowBlur: 0, textShadowColor: '#000000', textShadowOpacity: 0, textShadowX: 0, textShadowY: 0, width: 94.45, x: 2.77, y: 35.28 },
       { borderColor: '#667eea', borderOpacity: 0, fillColor: '#667eea', fillOpacity: 12, fontSize: 48, fontWeight: 'bold', height: 29.88, scale_mode: 'cover', shadowBlur: 0, shadowColor: '#000000', shadowOpacity: 0, shadowX: 0, shadowY: 0, text: '双击编辑文字', textAlign: 'center', textColor: '#333333', textOpacity: 100, textShadowBlur: 0, textShadowColor: '#000000', textShadowOpacity: 0, textShadowX: 0, textShadowY: 0, width: 94.45, x: 2.77, y: 67.02 },
+    ],
+  },
+  // ====== 以下为「模板库」模板（library:'full'），未解锁时带锁展示、不可用 ======
+  {
+    id: 'lib_grid4_9_16', name: '四图宫格 9:16', ratio: '9:16', background_color: '#FFFFFF', builtin: true, library: 'full',
+    placeholders: [
+      _builtinPh(2.77, 2.77, 46.48, 46.48),
+      _builtinPh(50.75, 2.77, 46.48, 46.48),
+      _builtinPh(2.77, 50.75, 46.48, 46.48),
+      _builtinPh(50.75, 50.75, 46.48, 46.48),
+    ],
+  },
+  {
+    id: 'lib_grid6_9_16', name: '六图宫格 9:16', ratio: '9:16', background_color: '#FFFFFF', builtin: true, library: 'full',
+    placeholders: [
+      _builtinPh(2.77, 2.77, 46.48, 30.49),
+      _builtinPh(50.75, 2.77, 46.48, 30.49),
+      _builtinPh(2.77, 34.76, 46.48, 30.49),
+      _builtinPh(50.75, 34.76, 46.48, 30.49),
+      _builtinPh(2.77, 66.75, 46.48, 30.49),
+      _builtinPh(50.75, 66.75, 46.48, 30.49),
     ],
   },
 ];
@@ -1931,7 +2058,12 @@ function importTemplates(evt) {
       const existing = loadCustomTemplates();
       const map = new Map();
       existing.forEach(t => map.set(t.id, t));
-      valid.forEach(t => { t.id = t.id || ('custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8)); map.set(t.id, { ...t }); });
+      valid.forEach(t => {
+        t.id = t.id || ('custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8));
+        // 导入的一律是买家自定义模板：剥离内置/模板库归属标记，防止伪造 full 特权
+        delete t.builtin; delete t.library;
+        map.set(t.id, { ...t });
+      });
       saveCustomTemplates([...map.values()]);
       loadTemplates();
       toast(`成功导入 ${valid.length} 个模板`);
@@ -1952,26 +2084,129 @@ function saveCustomTemplates(list) {
   catch (e) { toast('浏览器存储空间不足，模板未保存', 'error'); }
 }
 
+// ====== 模板库（full）解锁 ======
+// 已解锁判定：localStorage 中的哈希必须等于当前 CURRENT_LIB_HASH（换月常量后旧解锁自动失效，同口令门机制）
+function isLibUnlocked() {
+  try { return localStorage.getItem(LIB_LS_KEY) === CURRENT_LIB_HASH; } catch (e) { return false; }
+}
+// full 模板且当前未解锁 → 带锁
+function isLockedTpl(tpl) { return !!tpl && tpl.library === 'full' && !isLibUnlocked(); }
+function hasFullTpl() { return BUILTIN_TEMPLATES.some(t => t.library === 'full'); }
+
+// 同步工具栏「模板库解锁」入口按钮
+function renderLibEntry() {
+  const btn = document.getElementById('btnLibUnlock');
+  if (!btn) return;
+  if (!hasFullTpl()) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  if (isLibUnlocked()) {
+    btn.className = 'btn-lib-ok';
+    btn.textContent = '✓ 模板库已解锁';
+    btn.onclick = null;
+  } else {
+    btn.className = 'btn-lib';
+    btn.textContent = '🔑 模板库解锁';
+    btn.onclick = openLibUnlock;
+  }
+}
+
+// 复用口令门的 SHA-256 方案（口令门 IIFE 内的函数外部不可见，这里实现同算法）
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function openLibUnlock() {
+  const modal = document.getElementById('libUnlockModal');
+  const input = document.getElementById('libUnlockCode');
+  document.getElementById('libUnlockErr').textContent = '';
+  input.value = '';
+  input.classList.remove('error');
+  modal.classList.add('show');
+  setTimeout(() => input.focus(), 60);
+}
+function closeLibUnlock() {
+  document.getElementById('libUnlockModal').classList.remove('show');
+}
+async function submitLibUnlock() {
+  const input = document.getElementById('libUnlockCode');
+  const errEl = document.getElementById('libUnlockErr');
+  const btn = document.getElementById('libUnlockBtn');
+  const code = input.value.trim();
+  if (!code) return;
+  btn.disabled = true; btn.textContent = '校验中...';
+  try {
+    const hash = await sha256Hex(code);
+    if (hash !== CURRENT_LIB_HASH) {
+      errEl.textContent = '解锁码不正确';
+      input.classList.remove('error'); void input.offsetWidth; // 重启动画
+      input.classList.add('error');
+      return;
+    }
+    try { localStorage.setItem(LIB_LS_KEY, hash); } catch (e) {}
+    closeLibUnlock();
+    await loadTemplates(); // 刷新卡片：full 全部解锁可用
+    toast('模板库解锁成功，全部模板可用');
+  } finally {
+    btn.disabled = false; btn.textContent = '立即解锁';
+  }
+}
+(function bindLibUnlockModal() {
+  document.getElementById('libUnlockForm').addEventListener('submit', e => { e.preventDefault(); submitLibUnlock(); });
+  document.getElementById('libUnlockCancel').addEventListener('click', closeLibUnlock);
+  const overlay = document.getElementById('libUnlockModal');
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeLibUnlock(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('show')) closeLibUnlock();
+  });
+  document.getElementById('libUnlockCode').addEventListener('input', e => {
+    e.target.classList.remove('error');
+    document.getElementById('libUnlockErr').textContent = '';
+  });
+})();
+
 async function loadTemplates() {
+  // 注意：归属只能以代码里的 BUILTIN_TEMPLATES 定义为准；
+  // localStorage / 导入文件里的记录可能被买家伪造 builtin/library 字段，因此自定义记录一律强制 basic
   const customs = loadCustomTemplates();
-  state.templates = [...BUILTIN_TEMPLATES, ...customs].map(t => ({
-    ...t,
-    is_custom: !t.builtin,
-    placeholder_count: (t.placeholders || []).length,
-    image_count: tplImageCount(t),
-  }));
+  state.templates = [
+    ...BUILTIN_TEMPLATES.map(t => ({
+      ...t,
+      library: t.library === 'full' ? 'full' : 'basic',
+      is_custom: false,
+      placeholder_count: (t.placeholders || []).length,
+      image_count: tplImageCount(t),
+    })),
+    ...customs.map(t => ({
+      ...t,
+      builtin: false, library: 'basic', is_custom: true,
+      placeholder_count: (t.placeholders || []).length,
+      image_count: tplImageCount(t),
+    })),
+  ];
   renderTemplates();
+  renderLibEntry();
 }
 
 function renderTemplates() {
   const grid = document.getElementById('tplGrid');
   grid.innerHTML = '';
   state.templates.forEach(tpl => {
+    const locked = isLockedTpl(tpl);
+    // full 模板即使已解锁也不提供「编辑」（内置模板编辑=另存为自定义，等于复制传播）
+    const canEdit = !locked && tpl.library !== 'full';
     const card = document.createElement('div');
-    card.className = 'tpl-card';
-    card.onclick = () => addToQueue(tpl);
+    card.className = 'tpl-card' + (locked ? ' locked' : '');
+    card.title = locked ? '模板库需解锁后使用，请联系卖家' : '';
+    card.onclick = () => {
+      if (locked) { toast('模板库需解锁后使用，请联系卖家', 'info'); openLibUnlock(); }
+      else addToQueue(tpl);
+    };
 
     let preview = '<div class="tpl-preview">';
+    if (locked) {
+      preview += '<span class="tpl-lock-badge">🔒 模板库</span><div class="tpl-lock-mask"><span>🔒</span></div>';
+    }
     tpl.placeholders.forEach((ph, i) => {
       const shade = 220 - i * 28;
       preview += `<div class="ph" style="left:${ph.x}%;top:${ph.y}%;width:${ph.width}%;height:${ph.height}%;background:rgb(${shade},${shade},${shade});"></div>`;
@@ -1983,7 +2218,7 @@ function renderTemplates() {
       <div class="tname">${tpl.name}</div>
       <div class="tmeta">${tplImageCount(tpl)}图位</div>
       <div class="tactions">
-        <button class="btn-edit" onclick="event.stopPropagation();openEditor('${tpl.id}')">编辑</button>
+        ${canEdit ? `<button class="btn-edit" onclick="event.stopPropagation();openEditor('${tpl.id}')">编辑</button>` : ''}
         ${tpl.is_custom ? `<button class="btn-del" onclick="event.stopPropagation();deleteTemplate('${tpl.id}')">删除</button>` : ''}
       </div>`;
     grid.appendChild(card);
@@ -2045,6 +2280,7 @@ function setActiveSet(si) {
 function invalidateSet(s) { s.batchId = null; releasePages(s); }
 
 function addToQueue(tpl) {
+  if (isLockedTpl(tpl)) { toast('模板库需解锁后使用，请联系卖家', 'info'); openLibUnlock(); return; }
   const s = state.sets[state.activeSet];
   s.queue.push({
     id: tpl.id, name: tpl.name, ratio: tpl.ratio,
@@ -2345,6 +2581,12 @@ function openEditor(tplId) {
   if (tplId) {
     const tpl = state.templates.find(t => t.id === tplId);
     if (!tpl) return;
+    // 模板库模板禁止编辑（编辑内置模板会另存为自定义，等于复制传播 full 模板）
+    if (tpl.library === 'full') {
+      if (isLockedTpl(tpl)) { toast('模板库需解锁后使用，请联系卖家', 'info'); openLibUnlock(); }
+      else toast('模板库模板仅供使用，不支持编辑/另存', 'info');
+      return;
+    }
     state.editor.template = JSON.parse(JSON.stringify(tpl));
     document.getElementById('editorTitle').textContent = '编辑模板';
   } else {
@@ -3340,6 +3582,7 @@ async function saveTemplate() {
   const clean = JSON.parse(JSON.stringify(tpl));
   clean.id = id;
   delete clean.builtin;
+  delete clean.library; // 自定义模板一律 basic，防止编辑器另存时带入 full 归属
   const customs = loadCustomTemplates();
   const idx = customs.findIndex(t => t.id === id);
   if (idx >= 0) customs[idx] = clean; else customs.push(clean);
@@ -3368,6 +3611,7 @@ async function generateSet(si, opts) {
     for (const q of s.queue) {
       const tpl = state.templates.find(t => t.id === q.id);
       if (!tpl) continue;
+      if (isLockedTpl(tpl)) { toast('模板库需解锁后使用，请联系卖家', 'error'); return false; }
       const slots = [];
       for (let k = 0; k < tplImageCount(tpl); k++) {
         slots.push(state.images[ptr % n].uid);
@@ -3470,7 +3714,8 @@ function renderPreviewInfo() {
     chips += `<span class="ph-chip ${i === state.preview.selectedPH ? 'active' : ''}" onclick="selectPH(${i})">图位 ${i+1}</span>`;
   }
 
-  let tplOptions = state.templates.map(t =>
+  // 本页模板下拉不展示未解锁的 full 模板
+  let tplOptions = state.templates.filter(t => !isLockedTpl(t)).map(t =>
     `<option value="${t.id}" ${t.id === page.template_id ? 'selected' : ''}>${t.name} (${t.ratio})</option>`
   ).join('');
 
@@ -3553,6 +3798,7 @@ async function replacePageTemplate(tplId) {
   if (!s) { toast('替换失败，请重试', 'error'); return; }
   const tpl = state.templates.find(t => t.id === tplId);
   if (!tpl) { toast('模板不存在', 'error'); return; }
+  if (isLockedTpl(tpl)) { toast('模板库需解锁后使用，请联系卖家', 'error'); openLibUnlock(); return; }
   try {
     // 起始图位 = 之前各页当前模板的图片占位符之和（文本框不计数）
     let start = 0;
