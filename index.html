@@ -11,7 +11,7 @@
    - 哈希是 64 位十六进制字符串，不含口令明文，查看源码看不到口令
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
-const CURRENT_PASSWORD_HASH = '9a9d03a4fbf587017080cb5bb28ef8d27ecbd20e855ff7d017efa0db6a84a326';
+const CURRENT_PASSWORD_HASH = '37a120aeb2110e0b41f8132e77fbc78082bb59fbaf8dc3552fcd5100306de679';
 // 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
 try {
   if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
@@ -112,6 +112,13 @@ try {
   /* 左列 */
   .left-col { overflow: hidden; }
   .upload-panel { flex-shrink: 0; }
+  .upload-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .btn-clear-images {
+    flex-shrink: 0; padding: 5px 12px; border: 1px solid var(--border-strong);
+    background: var(--bg-surface); color: var(--text-2); border-radius: var(--r-md);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--ease);
+  }
+  .btn-clear-images:hover { border-color: var(--red-500); color: var(--red-600); background: var(--red-100); }
   .tpl-panel { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   .tpl-panel .tpl-scroll { flex: 1; overflow-y: auto; padding-right: 2px; }
 
@@ -260,6 +267,42 @@ try {
   }
   .btn-toggle-all:hover { border-color: var(--brand-500); color: var(--brand-600); background: var(--brand-50); }
 
+  /* ===== 方案管理（批量勾选 / 常用方案） ===== */
+  .manage-bar {
+    display: none; flex-direction: column; gap: 8px;
+    margin: 10px 0; padding: 10px 12px;
+    border: 1px solid var(--brand-200); border-radius: var(--r-lg);
+    background: var(--brand-50);
+  }
+  .manage-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .mbtn {
+    padding: 5px 13px; border: 1px solid var(--border-strong); border-radius: var(--r-md);
+    background: var(--bg-surface); color: var(--text-2);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--ease);
+    white-space: nowrap;
+  }
+  .mbtn:hover { border-color: var(--brand-500); color: var(--brand-600); background: var(--brand-50); }
+  .mbtn.primary { background: var(--brand-500); border-color: var(--brand-500); color: #fff; }
+  .mbtn.primary:hover { background: var(--brand-600); color: #fff; }
+  .mbtn.danger { background: var(--bg-surface); border-color: var(--red-200, #fed7d7); color: var(--red-600); }
+  .mbtn.danger:hover { background: var(--red-500); border-color: var(--red-500); color: #fff; }
+  #presetName {
+    flex: 1; min-width: 110px; padding: 5px 10px; border: 1px solid var(--border-strong);
+    border-radius: var(--r-md); font-size: 12px; color: var(--text-1);
+    background: var(--bg-surface); outline: none;
+  }
+  #presetName:focus { border-color: var(--brand-500); }
+  #presetSelect {
+    flex: 1; min-width: 130px; max-width: 220px; padding: 5px 8px;
+    border: 1px solid var(--border-strong); border-radius: var(--r-md);
+    font-size: 12px; color: var(--text-1); background: var(--bg-surface); outline: none;
+  }
+  /* 管理模式勾选框：行首大热区，与右侧操作按钮保持最远距离 */
+  .set-check {
+    width: 17px; height: 17px; flex-shrink: 0; cursor: pointer;
+    accent-color: var(--brand-500); margin-right: 2px;
+  }
+
   .set-card {
     border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 10px 14px;
     margin-bottom: 10px; background: var(--bg-surface); transition: all var(--ease);
@@ -335,6 +378,7 @@ try {
   }
   .export-title { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 10px; }
   .export-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+  .export-tip { font-size: 12px; color: var(--text-3); margin-top: 8px; line-height: 1.6; }
   .export-status { font-size: 12px; margin-top: 10px; color: var(--text-2); line-height: 1.7; }
   /* L1 大号按钮：品牌色 vs 成功色（落地导出语义） */
   .btn-export-zip, .btn-export-folder {
@@ -431,6 +475,16 @@ try {
     display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
   }
   .modal-header h2 { font-size: 16px; font-weight: 700; color: var(--text-1); }
+  .editor-toolbar { display: flex; align-items: center; gap: 8px; }
+  .btn-editor-tool {
+    border: 1px solid var(--border); background: var(--bg-surface);
+    padding: 6px 14px; border-radius: var(--r-pill); cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--text-2);
+    transition: all var(--ease);
+  }
+  .btn-editor-tool:hover { background: var(--brand-50); color: var(--brand-700); border-color: var(--brand-300); }
+  .btn-editor-tool.primary { background: var(--brand-500); color: #fff; border-color: transparent; }
+  .btn-editor-tool.primary:hover { background: var(--brand-600); color: #fff; }
   .modal-close {
     border: none; background: var(--bg-hover); width: 30px; height: 30px;
     border-radius: 50%; font-size: 16px; cursor: pointer; color: var(--text-2);
@@ -924,7 +978,10 @@ try {
   <!-- 左列 -->
   <div class="col left-col">
     <div class="panel upload-panel">
-      <h2><span class="num">1</span> 上传图片</h2>
+      <div class="upload-toolbar">
+        <h2><span class="num">1</span> 上传图片</h2>
+        <button class="btn-clear-images" id="btnClearImages" onclick="clearAllImages()" style="display:none" title="清空所有已上传图片">🗑 一键清空</button>
+      </div>
       <div class="upload-area" id="uploadArea">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" stroke-width="1.5">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -958,19 +1015,41 @@ try {
     <div class="panel sets-panel">
       <div class="sets-panel-head">
         <h2 style="margin:0;"><span class="num">3</span> 配图方案（同一套素材，可一次排多套）</h2>
-        <button class="btn-toggle-all" id="btnToggleAll" onclick="toggleAllSets()" title="折叠/展开所有方案的模板列表">全部折叠 ▴</button>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-toggle-all" id="btnManageSets" onclick="toggleManageMode()" title="批量选中方案：生成/删除/存为常用">☰ 方案管理</button>
+          <button class="btn-toggle-all" id="btnToggleAll" onclick="toggleAllSets()" title="折叠/展开所有方案的模板列表">全部折叠 ▴</button>
+        </div>
       </div>
       <div class="panel-hint">
         点击左侧模板，会添加到当前方案（<b id="activeSetName">方案1</b>，蓝色边框为当前方案，点击方案卡可切换）。
         每套方案独立排模板顺序、生成预览、检查替换；全部确认后用底部按钮统一导出。
+      </div>
+      <div class="manage-bar" id="manageBar">
+        <div class="manage-row">
+          <label style="font-size:12px;font-weight:700;color:var(--text-2);flex-shrink:0;">批量操作：</label>
+          <button class="mbtn" onclick="manageSelectAll(true)">全选</button>
+          <button class="mbtn" onclick="manageSelectAll(false)">全不选</button>
+          <button class="mbtn primary" onclick="manageGenerateSelected()">🚀 生成选中</button>
+          <button class="mbtn danger" onclick="manageDeleteSelected()">🗑 删除选中</button>
+          <span id="mbCount" style="font-size:12px;color:var(--text-2);"></span>
+        </div>
+        <div class="manage-row">
+          <label style="font-size:12px;font-weight:700;color:var(--text-2);flex-shrink:0;">常用方案：</label>
+          <input type="text" id="presetName" placeholder="名称（留空自动命名）">
+          <button class="mbtn" onclick="manageSavePreset()" title="把勾选的方案排列保存为常用方案">💾 存为常用</button>
+          <select id="presetSelect"><option value="">选择常用方案…</option></select>
+          <button class="mbtn" onclick="manageLoadPreset()" title="把常用方案的模板排列调入为新方案">📥 调入</button>
+          <button class="mbtn danger" onclick="manageDeletePreset()">删除该常用</button>
+        </div>
       </div>
       <div id="setsList"></div>
       <button class="btn-add-set" onclick="addSet()">＋ 添加一套方案</button>
       <div class="master-export">
         <div class="export-title">全部方案生成并检查完毕后，统一导出：</div>
         <div class="export-actions">
-          <button class="btn-export-zip" id="btnExportZip" onclick="exportAllZip()" disabled>📦 打包 ZIP 下载</button>
-          <button class="btn-export-folder" id="btnExportFolder" onclick="exportAllFolder()" disabled>📁 保存到桌面文件夹</button>
+          <button class="btn-export-zip" id="btnExportZip" onclick="exportAllZip()">📦 打包 ZIP 下载</button>
+          <button class="btn-export-folder" id="btnExportFolder" onclick="exportAllFolder()">📁 保存到桌面文件夹</button>
+          <button class="btn-open-folder" id="btnOpenFolder" onclick="openExportFolder()" style="display:none">📂 打开文件夹</button>
         </div>
         <div id="exportStatus" class="export-status"></div>
       </div>
@@ -983,7 +1062,11 @@ try {
   <div class="modal-box">
     <div class="modal-header">
       <h2 id="editorTitle">模板编辑器</h2>
-      <button class="modal-close" onclick="closeEditor()">×</button>
+      <div class="editor-toolbar">
+        <button class="btn-editor-tool" onclick="previewEditorTemplate()" title="全屏预览当前模板">👁 预览</button>
+        <button class="btn-editor-tool" onclick="closeEditor()" title="不保存直接返回">← 返回</button>
+        <button class="modal-close" onclick="closeEditor()">×</button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="editor-canvas-area">
@@ -1206,6 +1289,25 @@ try {
   </div>
 </div>
 
+<!-- 模板预览 Overlay（工坊内预览） -->
+<div class="preview-modal" id="editorPreviewOverlay">
+  <div class="preview-box" style="max-width:600px;">
+    <div class="preview-header">
+      <h2>模板预览 · <span id="editorPreviewTitle" style="color:#667eea;"></span></h2>
+      <div class="actions">
+        <button class="btn-confirm-zip" onclick="closeEditorPreview()">关闭预览</button>
+        <button class="preview-close" onclick="closeEditorPreview()">×</button>
+      </div>
+    </div>
+    <div style="padding:24px;display:flex;justify-content:center;align-items:center;background:#eef1f7;min-height:400px;">
+      <div id="editorPreviewCanvas" style="position:relative;overflow:hidden;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.15);"></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);text-align:center;color:var(--text-3);font-size:12px;">
+      预览为前端即时渲染，保存模板后可用于正式配图生成
+    </div>
+  </div>
+</div>
+
 <!-- 预览 Modal -->
 <div class="preview-modal" id="previewModal">
   <div class="preview-box">
@@ -1346,6 +1448,8 @@ const state = {
   ],
   activeSet: 0,   // 当前接收模板添加的方案
   previewSet: -1, // 预览弹窗正在查看的方案下标
+  manageMode: false,   // 方案管理模式（批量勾选）
+  selectedSets: [],    // 管理模式下勾选的方案下标
   ratios: ['1:1', '3:4', '9:16'],
   pxPerCm: 96 / 2.54,
   editor: {
@@ -1696,6 +1800,43 @@ function renderImages() {
   });
   list.appendChild(frag);
   document.getElementById('uploadCount').textContent = state.images.length > 0 ? `共 ${state.images.length} 张` : '';
+  const cb = document.getElementById('btnClearImages');
+  if (cb) cb.style.display = state.images.length > 0 ? '' : 'none';
+  saveSession();
+}
+
+// 一键清空所有已上传图片
+function clearAllImages() {
+  if (!state.images.length) { toast('当前没有已上传的图片', 'info'); return; }
+  if (!confirm(`确定清空全部 ${state.images.length} 张已上传图片？（已生成的配图不受影响）`)) return;
+  state.images = [];
+  renderImages();
+  updateGenBtn();
+  toast('已清空所有图片');
+}
+
+// ====== 会话状态持久化（刷新/往返后恢复图片与方案） ======
+function saveSession() {
+  try {
+    sessionStorage.setItem('xhs_main_session', JSON.stringify({
+      images: state.images, sets: state.sets, activeSet: state.activeSet,
+    }));
+  } catch (e) { /* 存储满等异常不阻塞主流程 */ }
+}
+
+function restoreSession() {
+  try {
+    const d = JSON.parse(sessionStorage.getItem('xhs_main_session'));
+    if (!d) return false;
+    let has = false;
+    if (Array.isArray(d.images) && d.images.length) { state.images = d.images; has = true; }
+    if (Array.isArray(d.sets) && d.sets.length) {
+      state.sets = d.sets;
+      state.activeSet = Math.min(d.activeSet || 0, d.sets.length - 1);
+      has = true;
+    }
+    return has;
+  } catch (e) { return false; }
 }
 
 function removeImage(idx) { state.images.splice(idx, 1); renderImages(); updateGenBtn(); }
@@ -1936,6 +2077,14 @@ function renderSets() {
   if (!wrap) return;
   wrap.innerHTML = '';
   const imgCount = state.images.length;
+  const manage = state.manageMode;
+  // 管理栏显隐与计数
+  const mb = document.getElementById('manageBar');
+  if (mb) mb.style.display = manage ? 'flex' : 'none';
+  const mbCount = document.getElementById('mbCount');
+  if (mbCount) mbCount.textContent = `已选 ${state.selectedSets.length}/${state.sets.length} 套`;
+  const bm = document.getElementById('btnManageSets');
+  if (bm) bm.textContent = manage ? '✕ 退出管理' : '☰ 方案管理';
   state.sets.forEach((s, si) => {
     const card = document.createElement('div');
     card.className = 'set-card' + (si === state.activeSet ? ' active' : '');
@@ -1965,17 +2114,24 @@ function renderSets() {
           <button class="qdown" onclick="event.stopPropagation();moveQueue(${si},${qi},1)" title="下移">▼</button>
           <button class="qdel" onclick="event.stopPropagation();removeFromQueue(${si},${qi})" title="删除">×</button>
         </div>`).join('');
-    const queueBlock = s.collapsed ? '' : `<div class="queue-list">${queueHtml}</div>`;
+    const queueBlock = (!manage && s.collapsed) ? '' : `<div class="queue-list">${queueHtml}</div>`;
+
+    // 管理模式：行首勾选框（与右侧按钮距离最远）；普通模式：生成/检查/删除
+    const chk = manage
+      ? `<input type="checkbox" class="set-check" ${state.selectedSets.includes(si) ? 'checked' : ''} onclick="event.stopPropagation();toggleSelectSet(${si})" title="选中此方案">`
+      : '';
+    const btns = manage ? '' : `
+          <button class="btn-generate-set" onclick="event.stopPropagation();generateSet(${si})" ${canGen ? '' : 'disabled'} title="生成预览">🚀 生成</button>
+          <button class="btn-review-set" onclick="event.stopPropagation();reviewSet(${si})" title="检查/替换">👁 检查</button>
+          <button class="set-del" onclick="event.stopPropagation();removeSet(${si})" title="删除该套">×</button>`;
 
     card.innerHTML = `
       <div class="set-info-row" onclick="setActiveSet(${si})">
+        ${chk}
         <button class="set-collapse-arrow" onclick="event.stopPropagation();toggleSetCollapsed(${si})" title="${s.collapsed ? '展开模板列表' : '折叠模板列表'}">${s.collapsed ? '▸ 展开' : '▾ 折叠'}</button>
         <span class="set-title">${s.name}</span>
         <span class="set-meta">${chips}</span>
-        <span class="set-btns">
-          <button class="btn-generate-set" onclick="event.stopPropagation();generateSet(${si})" ${canGen ? '' : 'disabled'} title="生成预览">🚀 生成</button>
-          <button class="btn-review-set" onclick="event.stopPropagation();openPreview(${si})" ${s.pages.length ? '' : 'disabled'} title="检查/替换">👁 检查</button>
-          <button class="set-del" onclick="event.stopPropagation();removeSet(${si})" title="删除该套">×</button>
+        <span class="set-btns">${btns}
         </span>
       </div>
       ${queueBlock}`;
@@ -1990,11 +2146,124 @@ function renderSets() {
     const allCollapsed = state.sets.every(s => s.collapsed);
     ta.textContent = allCollapsed ? '全部展开 ▾' : '全部折叠 ▴';
   }
-  const anyGenerated = state.sets.some(s => s.pages.length > 0);
   const ez = document.getElementById('btnExportZip');
   const ef = document.getElementById('btnExportFolder');
-  if (ez) ez.disabled = !anyGenerated;
-  if (ef) ef.disabled = !anyGenerated;
+  // 导出按钮任何状态都可点：未生成时由导出函数给出明确提示，避免置灰按钮点了没反应
+  if (ez) ez.disabled = false;
+  if (ef) ef.disabled = false;
+  saveSession();
+}
+
+// ====== 方案管理（批量勾选 / 常用方案） ======
+function toggleManageMode() {
+  state.manageMode = !state.manageMode;
+  state.selectedSets = [];
+  renderSets();
+}
+
+function toggleSelectSet(si) {
+  const i = state.selectedSets.indexOf(si);
+  if (i >= 0) state.selectedSets.splice(i, 1);
+  else state.selectedSets.push(si);
+  renderSets();
+}
+
+function manageSelectAll(all) {
+  state.selectedSets = all ? state.sets.map((_, i) => i) : [];
+  renderSets();
+}
+
+async function manageGenerateSelected() {
+  const list = [...state.selectedSets].sort((a, b) => a - b);
+  if (!list.length) { toast('请先勾选要生成的方案', 'info'); return; }
+  if (!state.images.length) { toast('请先上传图片', 'error'); return; }
+  let ok = 0;
+  for (const si of list) {
+    const r = await generateSet(si, { silent: true });
+    if (r) ok++;
+  }
+  toast(`批量生成完成：成功 ${ok}/${list.length} 套`, ok === list.length ? 'success' : 'info');
+  renderSets();
+}
+
+function manageDeleteSelected() {
+  const list = [...state.selectedSets].sort((a, b) => b - a); // 从后往前删，避免下标位移
+  if (!list.length) { toast('请先勾选要删除的方案', 'info'); return; }
+  if (!confirm(`确定删除选中的 ${list.length} 套方案？（已上传的图片不受影响）`)) return;
+  list.forEach(si => state.sets.splice(si, 1));
+  if (state.sets.length === 0) {
+    state.sets.push({ name: '方案1', queue: [], batchId: null, pages: [], collapsed: false });
+  }
+  renameSets();
+  state.activeSet = Math.min(state.activeSet, state.sets.length - 1);
+  state.previewSet = -1;
+  state.selectedSets = [];
+  renderSets();
+  toast(`已删除 ${list.length} 套方案`);
+}
+
+// 常用方案：把勾选方案的模板排列存入 localStorage，可随时调入
+const PRESETS_KEY = 'xhs_set_presets_v1';
+function loadPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESETS_KEY)) || []; } catch (e) { return []; }
+}
+function savePresets(p) { localStorage.setItem(PRESETS_KEY, JSON.stringify(p)); }
+
+function refreshPresetSelect() {
+  const sel = document.getElementById('presetSelect');
+  if (!sel) return;
+  const presets = loadPresets();
+  sel.innerHTML = '<option value="">选择常用方案…</option>' +
+    presets.map(p => `<option value="${p.name}">${p.name}（${p.items.length}套）</option>`).join('');
+}
+
+function manageSavePreset() {
+  const list = [...state.selectedSets].sort((a, b) => a - b);
+  if (!list.length) { toast('请先勾选要保存的方案', 'info'); return; }
+  const nameEl = document.getElementById('presetName');
+  const presets = loadPresets();
+  const name = (nameEl.value || '').trim() || ('常用' + (presets.length + 1));
+  if (presets.some(p => p.name === name) && !confirm(`常用方案「${name}」已存在，覆盖？`)) return;
+  const entry = {
+    name,
+    items: list.map(si => ({
+      queue: JSON.parse(JSON.stringify(state.sets[si].queue.map(q => ({
+        id: q.id, name: q.name, ratio: q.ratio,
+        placeholder_count: q.placeholder_count, image_count: q.image_count,
+      })))),
+    })),
+  };
+  const i = presets.findIndex(p => p.name === name);
+  if (i >= 0) presets[i] = entry; else presets.push(entry);
+  savePresets(presets);
+  nameEl.value = '';
+  refreshPresetSelect();
+  toast(`已存为常用方案「${name}」（${list.length} 套）`);
+}
+
+function manageLoadPreset() {
+  const sel = document.getElementById('presetSelect');
+  if (!sel || !sel.value) { toast('请先在下拉框选择要调入的常用方案', 'info'); return; }
+  const p = loadPresets().find(x => x.name === sel.value);
+  if (!p) { toast('该常用方案不存在', 'error'); return; }
+  p.items.forEach(it => {
+    state.sets.push({
+      name: '方案' + (state.sets.length + 1),
+      queue: JSON.parse(JSON.stringify(it.queue)),
+      batchId: null, pages: [], collapsed: false,
+    });
+  });
+  renderSets();
+  toast(`已调入「${p.name}」：新增 ${p.items.length} 套方案`);
+}
+
+function manageDeletePreset() {
+  const sel = document.getElementById('presetSelect');
+  if (!sel || !sel.value) { toast('请先在下拉框选择要删除的常用方案', 'info'); return; }
+  if (!confirm(`删除常用方案「${sel.value}」？`)) return;
+  savePresets(loadPresets().filter(x => x.name !== sel.value));
+  refreshPresetSelect();
+  toast('已删除该常用方案');
 }
 
 // 上传图片后刷新各方案按钮状态
@@ -2101,6 +2370,53 @@ function openEditor(tplId) {
 function closeEditor() {
   document.getElementById('editorOverlay').classList.remove('show');
   state.editor.template = null;
+}
+
+function previewEditorTemplate() {
+  const tpl = state.editor.template;
+  if (!tpl) return;
+  const ov = document.getElementById('editorPreviewOverlay');
+  const canvas = document.getElementById('editorPreviewCanvas');
+  document.getElementById('editorPreviewTitle').textContent = tpl.name || '未命名模板';
+  const dim = RATIO_DIM[tpl.ratio] || RATIO_DIM['3:4'];
+  const maxW = 520;
+  const w = maxW;
+  const h = Math.round(w * (dim.h / dim.w));
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.style.background = tpl.background_color;
+  canvas.innerHTML = '';
+  const def = defaultPhStyle();
+  tpl.placeholders.forEach((ph, i) => {
+    const s = { ...def, ...ph };
+    const div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = ph.x + '%';
+    div.style.top = ph.y + '%';
+    div.style.width = ph.width + '%';
+    div.style.height = ph.height + '%';
+    div.style.border = `1.5px dashed ${colorWithAlpha(s.borderColor, s.borderOpacity * 0.6)}`;
+    div.style.backgroundColor = colorWithAlpha(s.fillColor, s.fillOpacity);
+    div.style.boxSizing = 'border-box';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    if (s.shadowOpacity > 0 && (s.shadowX || s.shadowY || s.shadowBlur)) {
+      div.style.boxShadow = `${s.shadowX}px ${s.shadowY}px ${s.shadowBlur}px ${colorWithAlpha(s.shadowColor, s.shadowOpacity)}`;
+    }
+    if (ph.type === 'text') {
+      div.style.borderStyle = 'solid';
+      div.innerHTML = `<span style="color:${colorWithAlpha(s.textColor, s.textOpacity)};font-size:${s.fontSize}px;font-weight:${s.fontWeight};text-align:${s.textAlign};text-shadow:${s.textShadowOpacity > 0 && (s.textShadowX || s.textShadowY || s.textShadowBlur) ? s.textShadowX + 'px ' + s.textShadowY + 'px ' + s.textShadowBlur + 'px ' + colorWithAlpha(s.textShadowColor, s.textShadowOpacity) : 'none'};">${s.text || '文字内容'}</span>`;
+    } else {
+      div.innerHTML = `<span style="color:rgba(255,255,255,.75);font-size:12px;">图片 #${i + 1}</span>`;
+    }
+    canvas.appendChild(div);
+  });
+  ov.classList.add('show');
+}
+
+function closeEditorPreview() {
+  document.getElementById('editorPreviewOverlay').classList.remove('show');
 }
 
 function setRatio(ratio) {
@@ -3034,11 +3350,12 @@ async function saveTemplate() {
 }
 
 // ====== 生成预览（按方案，全部本地完成） ======
-async function generateSet(si) {
+async function generateSet(si, opts) {
+  const silent = opts && opts.silent;
   const s = state.sets[si];
-  if (!s) return;
-  if (state.images.length === 0) { toast('请先上传图片', 'error'); return; }
-  if (s.queue.length === 0) { toast(`${s.name}还没有添加模板`, 'error'); return; }
+  if (!s) return false;
+  if (state.images.length === 0) { toast('请先上传图片', 'error'); return false; }
+  if (s.queue.length === 0) { toast(`${s.name}还没有添加模板`, 'error'); return false; }
   state.activeSet = si;
   const btn = document.querySelectorAll('.set-card')[si]?.querySelector('.btn-generate-set');
   if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
@@ -3060,20 +3377,41 @@ async function generateSet(si) {
     }
     s.pages = pages;
     s.batchId = 'local';
-    toast(`${s.name}生成完成，共 ${pages.length} 页`);
     renderSets();
-    openPreview(si);
-    return;
+    if (!silent) {
+      toast(`${s.name}生成完成，共 ${pages.length} 页`);
+      openPreview(si);
+    }
+    return true;
   } catch (err) {
     toast('生成失败: ' + err.message, 'error');
   }
   renderSets();
+  return false;
 }
 
 // 当前预览弹窗对应的方案
 function pvSet() { return state.sets[state.previewSet]; }
 
 // ====== 预览 Modal ======
+// 「检查」按钮统一入口：任何状态下都可点击，并给出明确下一步提示
+function reviewSet(si) {
+  try {
+    const s = state.sets[si];
+    if (!s) { toast('未找到该方案，请刷新页面重试', 'error'); return; }
+    if (!s.queue.length) {
+      toast('请先在左侧模板库点选模板，添加到「' + s.name + '」', 'info'); return;
+    }
+    if (!s.pages.length) {
+      toast('请先点击「🚀 生成」，生成完成后即可检查与替换', 'info'); return;
+    }
+    openPreview(si);
+  } catch (e) {
+    console.error('[reviewSet]', e);
+    toast('打开检查失败: ' + e.message, 'error');
+  }
+}
+
 function openPreview(si) {
   state.previewSet = si;
   const s = pvSet();
@@ -3363,6 +3701,10 @@ async function exportAllFolder() {
       detail.push(`${set.name}（${set.pages.length}张）`);
     }
     statusEl.innerHTML = `✅ 已保存 <b>${total}</b> 张到你选择文件夹中的 <b>${stamp}</b> 文件夹<br>包含：${detail.join('、')}`;
+    // 记住所选文件夹，供「打开文件夹」按钮重新定位
+    window.__exportDirHandle = root;
+    const ob = document.getElementById('btnOpenFolder');
+    if (ob) ob.style.display = '';
     toast('已保存到文件夹');
   } catch (err) {
     if (err && err.name === 'AbortError') { statusEl.textContent = ''; return; }
@@ -3375,20 +3717,37 @@ async function exportAllFolder() {
   }
 }
 
+// 打开上次保存的文件夹：重新弹出定位到该文件夹的系统对话框（网页无法直接调起资源管理器）
+async function openExportFolder() {
+  const h = window.__exportDirHandle;
+  if (!h || !window.showDirectoryPicker) { toast('请先「保存到桌面文件夹」成功后再打开', 'info'); return; }
+  try {
+    await window.showDirectoryPicker({ startIn: h });
+  } catch (e) { /* 用户取消 */ }
+}
+
 // ====== 初始化 ======
-// Esc 关闭弹窗（图片选择器优先，其次预览弹窗）
+// Esc 关闭弹窗（优先级：图片选择器 → 工坊模板预览 → 方案预览）
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const ae = document.activeElement;
   if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) return;
   const picker = document.getElementById('imgPicker');
   if (picker && picker.classList.contains('show')) { closeImgPicker(); return; }
+  const epv = document.getElementById('editorPreviewOverlay');
+  if (epv && epv.classList.contains('show')) { closeEditorPreview(); return; }
   const pm = document.getElementById('previewModal');
   if (pm && pm.classList.contains('show')) closePreview();
 });
 
+// 从 sessionStorage 恢复上次的图片与方案（刷新/编辑器往返后不丢失）
+const __restored = restoreSession();
 renderSets();
+refreshPresetSelect();
 loadTemplates();
+if (__restored && (state.images.length || state.sets.some(s => s.queue.length))) {
+  toast('已恢复上次的图片与方案');
+}
 </script>
 </body>
 </html>
