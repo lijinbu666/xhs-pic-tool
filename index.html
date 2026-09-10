@@ -11,10 +11,10 @@
    - 哈希是 64 位十六进制字符串，不含口令明文，查看源码看不到口令
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
-const CURRENT_PASSWORD_HASH = '361437d715cf8a56b52fc2fc15074ab38cfdb85cbfc72d98afc228cf9e5317bd';
+const CURRENT_PASSWORD_HASH = 'c1d3ba9bd0bc42602fdeeace891f02eede40cea761763b7c6c47d34624d98867';
 // 模板库解锁码（单独发放给购买模板库的买家，与月度口令不同）
 // 月更方式同口令：用「口令生成器」里的模板库解锁码生成器算出新哈希，替换本行后重新部署
-const CURRENT_LIB_HASH = '5e7bc691d45ebce69f1c2e77ad6e8ed04af5a0f2d660fe20cba181f395268b0f';
+const CURRENT_LIB_HASH = '858b679d10c896c933db528152e847fded0b9da320253a43f1f1d98665aa3391';
 // 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
 try {
   if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
