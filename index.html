@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>小红书配图便捷生成工具</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235e6be0'/%3E%3Cstop offset='1' stop-color='%237a58c9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='58' fill='url(%23g)'/%3E%3Crect x='46' y='62' width='164' height='132' rx='20' fill='%23ffffff'/%3E%3Ccircle cx='165' cy='99' r='15' fill='%237a58c9'/%3E%3Cpolygon points='66,178 108,128 150,178' fill='%236664d6'/%3E%3Cpolygon points='124,178 168,118 194,178' fill='%235a67d8'/%3E%3C/svg%3E">
+<link rel="alternate icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <script>
 /* ============================================================
    月度口令哈希（SHA-256）
@@ -1084,6 +1087,102 @@ try {
     margin-top: 22px;
     font-size: 11px; color: #b8bfd1;
   }
+  .gate-guide-link {
+    display: block; margin-top: 10px;
+    font-size: 12px; color: #667eea; text-decoration: none;
+  }
+  .gate-guide-link:hover { text-decoration: underline; }
+
+  /* ===== 使用指南弹窗 ===== */
+  .btn-guide {
+    font-size: 12px; font-weight: 600; color: #fff;
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3);
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+    transition: background .15s ease;
+  }
+  .btn-guide:hover { background: rgba(255,255,255,.28); }
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  @media (max-width: 600px) { .btn-guide { padding: 6px 10px; } }
+
+  .guide-overlay {
+    position: fixed; inset: 0; z-index: 10001;
+    background: rgba(15,23,42,.52); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; padding: 18px;
+  }
+  .guide-overlay.show { display: flex; }
+  .guide-box {
+    background: #fff; border-radius: 16px; width: 580px; max-width: 100%;
+    max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px rgba(15,23,42,.32); overflow: hidden;
+    animation: guidePop .22s ease;
+  }
+  @keyframes guidePop {
+    from { transform: translateY(14px) scale(.98); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .guide-head {
+    background: linear-gradient(120deg, #5e6be0, #7a58c9);
+    color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .guide-head img { width: 40px; height: 40px; border-radius: 10px; display: block; }
+  .guide-head h2 { font-size: 16px; font-weight: 700; }
+  .guide-head p { font-size: 12px; opacity: .9; margin-top: 2px; }
+  .guide-x {
+    margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
+    border: none; background: rgba(255,255,255,.18); color: #fff;
+    font-size: 16px; cursor: pointer; flex-shrink: 0; line-height: 1;
+  }
+  .guide-x:hover { background: rgba(255,255,255,.32); }
+  .guide-body { padding: 16px 20px; overflow-y: auto; }
+  .guide-body h3 {
+    font-size: 13px; font-weight: 700; color: var(--text-1);
+    margin: 14px 0 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .guide-body h3:first-child { margin-top: 0; }
+  .g-step {
+    display: flex; gap: 11px; align-items: flex-start;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .g-step .g-num {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(120deg, #5e6be0, #7a58c9); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .g-step b { font-size: 13px; color: var(--text-1); }
+  .g-step p { font-size: 12px; color: var(--text-2); line-height: 1.6; margin-top: 2px; }
+  .g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .g-feat {
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
+    background: #fff;
+  }
+  .g-feat b { font-size: 12.5px; color: var(--text-1); display: block; margin-bottom: 2px; }
+  .g-feat p { font-size: 11.5px; color: var(--text-3); line-height: 1.55; }
+  .g-tips {
+    margin-top: 12px; border-radius: 10px; padding: 10px 12px;
+    background: #fffbeb; border: 1px solid #fde68a;
+    font-size: 12px; color: #92400e; line-height: 1.7;
+  }
+  .guide-foot {
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-shrink: 0; background: #fafbfe;
+  }
+  .guide-foot label { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .guide-start {
+    border: none; border-radius: 999px; padding: 9px 26px;
+    background: linear-gradient(120deg, #5e6be0, #7a58c9); color: #fff;
+    font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+    box-shadow: 0 4px 12px rgba(94,107,224,.3);
+  }
+  .guide-start:active { transform: scale(.97); }
+  @media (max-width: 480px) {
+    .g-grid { grid-template-columns: 1fr; }
+    .guide-box { max-height: 94vh; }
+  }
 </style>
 
 <div id="accessGate" role="dialog" aria-label="口令验证">
@@ -1099,6 +1198,53 @@ try {
       <div class="gate-err" id="gateErr"></div>
     </form>
     <div class="gate-foot">口令仅在本地校验，不会上传</div>
+    <a class="gate-guide-link" href="javascript:void(0)" onclick="openGuide()">📖 第一次使用？点这里看使用说明</a>
+  </div>
+</div>
+
+<!-- 使用指南弹窗 -->
+<div class="guide-overlay" id="guideModal" role="dialog" aria-label="使用指南">
+  <div class="guide-box">
+    <div class="guide-head">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235e6be0'/%3E%3Cstop offset='1' stop-color='%237a58c9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='58' fill='url(%23g)'/%3E%3Crect x='46' y='62' width='164' height='132' rx='20' fill='%23ffffff'/%3E%3Ccircle cx='165' cy='99' r='15' fill='%237a58c9'/%3E%3Cpolygon points='66,178 108,128 150,178' fill='%236664d6'/%3E%3Cpolygon points='124,178 168,118 194,178' fill='%235a67d8'/%3E%3C/svg%3E" alt="">
+      <div>
+        <h2>使用指南</h2>
+        <p>3 步做出一套小红书配图</p>
+      </div>
+      <button class="guide-x" onclick="closeGuide()" aria-label="关闭">✕</button>
+    </div>
+    <div class="guide-body">
+      <h3>🚀 三步上手</h3>
+      <div class="g-step">
+        <div class="g-num">1</div>
+        <div><b>上传图片</b><p>点击左侧虚线框，或直接把图片拖进去，一次可传 20 张以上；支持 PNG / JPG / WEBP / GIF 等常见格式。</p></div>
+      </div>
+      <div class="g-step">
+        <div class="g-num">2</div>
+        <div><b>选模板、配方案</b><p>在模板库点卡片，即加入右侧当前方案。内置三图竖排、四图宫格、六图宫格；点卡片可进入模板工坊微调；支持搜索、按比例筛选、星标常用、拖拽排序。</p></div>
+      </div>
+      <div class="g-step">
+        <div class="g-num">3</div>
+        <div><b>生成 → 检查 → 导出</b><p>点方案上的「生成」，在预览区逐页检查，可换照片、换模板；全部确认后点底部「打包 ZIP 下载」或「保存到文件夹」即可。</p></div>
+      </div>
+
+      <h3>✨ 好用功能</h3>
+      <div class="g-grid">
+        <div class="g-feat"><b>📚 一套素材多套方案</b><p>同一批图排多种风格，统一生成、统一导出，每个方案自动分文件夹。</p></div>
+        <div class="g-feat"><b>🛠 模板工坊</b><p>自由增删图位和文字、拖拽排版；做好的模板自动保存在本机。</p></div>
+        <div class="g-feat"><b>💾 换机不丢模板</b><p>自定义模板可导出为文件，换电脑/重装浏览器后一键导入恢复。</p></div>
+        <div class="g-feat"><b>🔒 照片不上传</b><p>所有图片都在本机浏览器里处理，不经过任何服务器，断网也能用。</p></div>
+      </div>
+
+      <div class="g-tips">
+        💡 <b>小贴士：</b>刷新或关闭网页会清空未导出的图片和预览，请先导出再关页面（自定义模板会保留，不受影响）。<br>
+        🔑 口令每月更新一次，当月有效，下月需向卖家索取新口令。
+      </div>
+    </div>
+    <div class="guide-foot">
+      <label><input type="checkbox" id="guideNoShow" checked> 下次不再自动弹出</label>
+      <button class="guide-start" onclick="closeGuide()">开始使用</button>
+    </div>
   </div>
 </div>
 
@@ -1107,8 +1253,11 @@ try {
     <h1>小红书配图便捷生成工具</h1>
     <div class="sub">上传 → 选模板 → 生成预览 → 确认修改 → 打包下载</div>
   </div>
-  <div class="compat-badge" title="图片全部在本机浏览器处理，不上传到任何服务器">
-    适配 Chrome/Edge 88+、Firefox 89+、Safari 15+（Windows/macOS/Linux）
+  <div class="header-actions">
+    <button class="btn-guide" onclick="openGuide()" title="查看功能介绍与使用说明">📖 使用指南</button>
+    <div class="compat-badge" title="图片全部在本机浏览器处理，不上传到任何服务器">
+      适配 Chrome/Edge 88+、Firefox 89+、Safari 15+（Windows/macOS/Linux）
+    </div>
   </div>
 </header>
 
@@ -1539,6 +1688,7 @@ try {
       if (hash === HASH) {
         try { localStorage.setItem(LS_KEY, hash); } catch(_) {}
         hideGate();
+        setTimeout(function(){ try { window.__maybeShowGuide && window.__maybeShowGuide(); } catch(_){} }, 300);
         return true;
       } else {
         showErr('口令错误，请重新输入');
@@ -1578,6 +1728,44 @@ try {
   else init();
 })();
 /* === 口令门结束 === */
+
+/* === 使用指南弹窗 === */
+(function(){
+  const GUIDE_KEY = 'xhs_guide_seen_v1';
+  const modal = document.getElementById('guideModal');
+  if (!modal) return;
+  window.openGuide = function(){
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeGuide = function(){
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    const cb = document.getElementById('guideNoShow');
+    try {
+      if (cb && cb.checked) localStorage.setItem(GUIDE_KEY, '1');
+      else localStorage.removeItem(GUIDE_KEY);
+    } catch(_) {}
+  };
+  // 点遮罩 / 按 Esc 关闭
+  modal.addEventListener('click', function(e){ if (e.target === modal) window.closeGuide(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && modal.classList.contains('show')) window.closeGuide();
+  });
+  function isAuthed(){
+    return document.documentElement.classList.contains('gate-authed') ||
+           (document.getElementById('accessGate') &&
+            document.getElementById('accessGate').classList.contains('hidden'));
+  }
+  window.__maybeShowGuide = function(){
+    let seen = false;
+    try { seen = localStorage.getItem(GUIDE_KEY) === '1'; } catch(_) {}
+    if (!seen && isAuthed()) window.openGuide();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.__maybeShowGuide);
+  else window.__maybeShowGuide();
+})();
+/* === 使用指南结束 === */
 
 // ==== 版本号与自动更新检查 ====
 const TOOL_VERSION = '1.2.0';
