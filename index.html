@@ -1920,10 +1920,25 @@ function drawTextPH(ctx, ph, x, y, w, h) {
   ctx.restore();
 }
 
-function drawFit(ctx, img, x, y, w, h, mode) {
+// 圆角矩形路径（手动 arcTo，兼容不支持 ctx.roundRect 的旧浏览器）。r 为像素半径
+function rrPath(ctx, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+  if (r <= 0.5) { ctx.rect(x, y, w, h); return; }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawFit(ctx, img, x, y, w, h, mode, radius) {
   const iw = img.naturalWidth, ih = img.naturalHeight;
+  const r = Math.max(0, Math.min(num(radius, 0), Math.min(w, h) / 2));
   ctx.save();
-  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.beginPath();
+  if (r > 0.5) rrPath(ctx, x, y, w, h, r); else ctx.rect(x, y, w, h);
+  ctx.clip();
   if (mode === 'stretch') {
     ctx.drawImage(img, x, y, w, h);
   } else {
@@ -1955,6 +1970,8 @@ function renderPageCanvas(tpl, slots) {
     const x = num(ph.x, 0) / 100 * W, y = num(ph.y, 0) / 100 * H;
     const w = num(ph.width, 10) / 100 * W, h = num(ph.height, 10) / 100 * H;
     if (w <= 0 || h <= 0) continue;
+    // radius 按画布宽度百分比存储（与字号同一设计坐标系）
+    const r = num(ph.radius, 0) / 100 * W;
     const isText = ph.type === 'text';
 
     // 外阴影 + 填充
@@ -1970,7 +1987,9 @@ function renderPageCanvas(tpl, slots) {
         ctx.shadowOffsetY = num(ph.shadowY, 0);
       }
       ctx.fillStyle = fillOp > 0 ? colorRgba(ph.fillColor || '#667eea', fillOp) : 'rgba(0,0,0,0.01)';
-      ctx.fillRect(x, y, w, h);
+      ctx.beginPath();
+      rrPath(ctx, x, y, w, h, r);
+      ctx.fill();
       ctx.restore();
     }
 
@@ -1981,7 +2000,7 @@ function renderPageCanvas(tpl, slots) {
       const imgItem = imageByUid(slots[ord]);
       const imgEl = imgItem && imgItem.imgEl;
       if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
-        try { drawFit(ctx, imgEl, x, y, w, h, ph.scale_mode); } catch (e) { /* 单图失败跳过 */ }
+        try { drawFit(ctx, imgEl, x, y, w, h, ph.scale_mode, r); } catch (e) { /* 单图失败跳过 */ }
       }
     }
 
@@ -1991,7 +2010,9 @@ function renderPageCanvas(tpl, slots) {
       ctx.save();
       ctx.strokeStyle = colorRgba(ph.borderColor || '#667eea', bOp);
       ctx.lineWidth = Math.max(1, Math.round(2 * (W / 1080)));
-      ctx.strokeRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth);
+      ctx.beginPath();
+      rrPath(ctx, x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth, Math.max(0, r - ctx.lineWidth / 2));
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -2204,6 +2225,26 @@ function _builtinPh(x, y, w, h) {
   return { borderColor: '#667eea', borderOpacity: 0, fillColor: '#667eea', fillOpacity: 12, fontSize: 48, fontWeight: 'bold', height: h, scale_mode: 'cover', shadowBlur: 0, shadowColor: '#000000', shadowOpacity: 0, shadowX: 0, shadowY: 0, text: '双击编辑文字', textAlign: 'center', textColor: '#333333', textOpacity: 100, textShadowBlur: 0, textShadowColor: '#000000', textShadowOpacity: 0, textShadowX: 0, textShadowY: 0, width: w, x: x, y: y };
 }
 
+// ===== 红金教赛 / 蓝色商务风格内置模板辅助（坐标均为画布百分比，radius 为画布宽度百分比） =====
+function _biImg(x, y, w, h, o) {
+  return Object.assign(_builtinPh(x, y, w, h), {
+    radius: 1.6, fillColor: '#EDE6DA', fillOpacity: 100,
+    borderColor: '#D9CFBE', borderOpacity: 100,
+  }, o || {});
+}
+function _biTxt(x, y, w, h, text, o) {
+  return Object.assign(_builtinPh(x, y, w, h), {
+    type: 'text', text: text, borderOpacity: 0, fillOpacity: 0,
+    fontSize: 40, fontWeight: 'bold', textAlign: 'center', textColor: '#3A2A26',
+  }, o || {});
+}
+function _biFill(x, y, w, h, color, o) {
+  return Object.assign(_builtinPh(x, y, w, h), {
+    type: 'text', text: '', borderOpacity: 0,
+    fillColor: color, fillOpacity: 100,
+  }, o || {});
+}
+
 const BUILTIN_TEMPLATES = [
   {
     id: 'single_9_16', name: '三图竖排 9:16', ratio: '9:16', background_color: '#FFFFFF', builtin: true,
@@ -2231,6 +2272,160 @@ const BUILTIN_TEMPLATES = [
       _builtinPh(50.75, 34.76, 46.48, 30.49),
       _builtinPh(2.77, 66.75, 46.48, 30.49),
       _builtinPh(50.75, 66.75, 46.48, 30.49),
+    ],
+  },
+
+  /* ===== 红金教赛 / 蓝色商务风格（提取自常用 PPT 配图版式，3:4） ===== */
+  {
+    id: 'cover_red_3x4', name: '红金封面 3:4', ratio: '3:4', background_color: '#821212', builtin: true,
+    placeholders: [
+      _biFill(7, 6, 86, 0.35, '#D8A954'),
+      _biTxt(20, 7.2, 60, 4, '教学大赛 · 双击改小标题', { fontSize: 28, textColor: '#E7C47A' }),
+      _biTxt(10, 15, 80, 15, '双击输入\n主标题', { fontSize: 84, textColor: '#F6E7C6' }),
+      _biTxt(15, 32, 70, 5, '点击此处输入副标题', { fontSize: 34, fontWeight: 'normal', textColor: '#F1E6D2' }),
+      _biFill(42, 39, 16, 0.4, '#D8A954'),
+      _biImg(8, 43, 84, 43, { radius: 2.4, fillColor: '#FFFFFF', fillOpacity: 20, borderColor: '#E7C47A', borderOpacity: 70 }),
+      _biFill(30, 88.5, 40, 5.4, '#F7F0E4', { radius: 2.7 }),
+      _biTxt(30, 88.5, 40, 5.4, '作者 / 署名', { fontSize: 30, textColor: '#821212' }),
+      _biFill(7, 96.2, 86, 0.35, '#D8A954'),
+    ],
+  },
+  {
+    id: 'section_red_3x4', name: '章节过渡页 3:4', ratio: '3:4', background_color: '#F7F0E4', builtin: true,
+    placeholders: [
+      _biTxt(6, 10, 88, 42, '01', { fontSize: 300, textColor: '#9E1B1B', textOpacity: 10 }),
+      _biFill(9, 53, 13, 0.9, '#9E1B1B'),
+      _biTxt(9, 56, 82, 9, '章节标题', { fontSize: 72, textAlign: 'left' }),
+      _biTxt(9, 67, 82, 7, '双击输入本章节概述文字', { fontSize: 30, fontWeight: 'normal', textAlign: 'left', textColor: '#8A7A6C' }),
+      _biFill(0, 91.4, 100, 0.5, '#D8A954'),
+      _biFill(0, 92, 100, 8, '#9E1B1B'),
+      _biTxt(9, 93.2, 82, 5, '双击编辑页脚文字', { fontSize: 26, fontWeight: 'normal', textAlign: 'left', textColor: '#F7F0E4' }),
+    ],
+  },
+  {
+    id: 'toc_red_3x4', name: '目录页 3:4', ratio: '3:4', background_color: '#F7F0E4', builtin: true,
+    placeholders: [
+      _biFill(0, 0, 100, 13, '#9E1B1B'),
+      _biTxt(8, 3.5, 50, 6, '目录', { fontSize: 54, textAlign: 'left', textColor: '#FFFFFF' }),
+      _biTxt(62, 5, 30, 3.5, 'CONTENTS', { fontSize: 22, fontWeight: 'normal', textAlign: 'right', textColor: '#E7C47A' }),
+      _biTxt(9, 21, 9, 8, '①', { fontSize: 56, textColor: '#C8973F' }),
+      _biTxt(20, 22.5, 71, 5, '双击输入第一条目录', { fontSize: 38, textAlign: 'left' }),
+      _biFill(9, 31, 82, 0.25, '#D8C7A8'),
+      _biTxt(9, 37, 9, 8, '②', { fontSize: 56, textColor: '#C8973F' }),
+      _biTxt(20, 38.5, 71, 5, '双击输入第二条目录', { fontSize: 38, textAlign: 'left' }),
+      _biFill(9, 47, 82, 0.25, '#D8C7A8'),
+      _biTxt(9, 53, 9, 8, '③', { fontSize: 56, textColor: '#C8973F' }),
+      _biTxt(20, 54.5, 71, 5, '双击输入第三条目录', { fontSize: 38, textAlign: 'left' }),
+      _biFill(9, 63, 82, 0.25, '#D8C7A8'),
+      _biTxt(9, 69, 9, 8, '④', { fontSize: 56, textColor: '#C8973F' }),
+      _biTxt(20, 70.5, 71, 5, '双击输入第四条目录', { fontSize: 38, textAlign: 'left' }),
+      _biFill(9, 87, 82, 0.35, '#D8A954'),
+    ],
+  },
+  {
+    id: 'imgtext_red_3x4', name: '左图右文 3:4', ratio: '3:4', background_color: '#FFFFFF', builtin: true,
+    placeholders: [
+      _biFill(0, 0, 100, 12, '#9E1B1B'),
+      _biTxt(7, 3.3, 86, 5.5, '点击编辑标题', { fontSize: 46, textAlign: 'left', textColor: '#FFFFFF' }),
+      _biFill(0, 12, 100, 0.5, '#D8A954'),
+      _biImg(7, 17, 38, 64, { radius: 1.4 }),
+      _biFill(50, 17, 43, 19, '#F7F0E4', { radius: 1.2 }),
+      _biTxt(52, 18.5, 39, 16, '要点一\n双击输入要点说明文字，文字会自动换行', { fontSize: 27, fontWeight: 'normal', textAlign: 'left' }),
+      _biFill(50, 39, 43, 19, '#F7F0E4', { radius: 1.2 }),
+      _biTxt(52, 40.5, 39, 16, '要点二\n双击输入要点说明文字，文字会自动换行', { fontSize: 27, fontWeight: 'normal', textAlign: 'left' }),
+      _biFill(50, 61, 43, 19, '#F7F0E4', { radius: 1.2 }),
+      _biTxt(52, 62.5, 39, 16, '要点三\n双击输入要点说明文字，文字会自动换行', { fontSize: 27, fontWeight: 'normal', textAlign: 'left' }),
+      _biFill(0, 93, 100, 7, '#9E1B1B'),
+      _biTxt(7, 94.2, 86, 4.5, '结尾金句 / 页脚（双击编辑）', { fontSize: 25, fontWeight: 'normal', textAlign: 'left', textColor: '#E7C47A' }),
+    ],
+  },
+  {
+    id: 'goals3_red_3x4', name: '三栏卡片 3:4', ratio: '3:4', background_color: '#F7F0E4', builtin: true,
+    placeholders: [
+      _biTxt(8, 5, 84, 6.5, '三大目标 · 双击改标题', { fontSize: 50, textColor: '#9E1B1B' }),
+      _biFill(42, 12.5, 16, 0.4, '#D8A954'),
+      _biFill(7, 17, 26, 70, '#FFFFFF', { radius: 1.6, shadowColor: '#5A0D0D', shadowOpacity: 10, shadowX: 0, shadowY: 6, shadowBlur: 16 }),
+      _biFill(10, 20.5, 20, 6.2, '#9E1B1B', { radius: 3.1 }),
+      _biTxt(10, 20.5, 20, 6.2, '知识目标', { fontSize: 34, textColor: '#FFFFFF' }),
+      _biTxt(9.5, 30, 21, 54, '双击输入\n目标说明文字', { fontSize: 27, fontWeight: 'normal', textColor: '#5A4A40' }),
+      _biFill(37, 17, 26, 70, '#FFFFFF', { radius: 1.6, shadowColor: '#5A0D0D', shadowOpacity: 10, shadowX: 0, shadowY: 6, shadowBlur: 16 }),
+      _biFill(40, 20.5, 20, 6.2, '#9E1B1B', { radius: 3.1 }),
+      _biTxt(40, 20.5, 20, 6.2, '能力目标', { fontSize: 34, textColor: '#FFFFFF' }),
+      _biTxt(39.5, 30, 21, 54, '双击输入\n目标说明文字', { fontSize: 27, fontWeight: 'normal', textColor: '#5A4A40' }),
+      _biFill(67, 17, 26, 70, '#FFFFFF', { radius: 1.6, shadowColor: '#5A0D0D', shadowOpacity: 10, shadowX: 0, shadowY: 6, shadowBlur: 16 }),
+      _biFill(70, 20.5, 20, 6.2, '#9E1B1B', { radius: 3.1 }),
+      _biTxt(70, 20.5, 20, 6.2, '素质目标', { fontSize: 34, textColor: '#FFFFFF' }),
+      _biTxt(69.5, 30, 21, 54, '双击输入\n目标说明文字', { fontSize: 27, fontWeight: 'normal', textColor: '#5A4A40' }),
+      _biFill(0, 93, 100, 7, '#9E1B1B'),
+      _biTxt(8, 94.2, 84, 4.5, '双击编辑页脚文字', { fontSize: 24, fontWeight: 'normal', textColor: '#F7F0E4' }),
+    ],
+  },
+  {
+    id: 'grid4_red_3x4', name: '横幅四图 3:4', ratio: '3:4', background_color: '#FFFFFF', builtin: true,
+    placeholders: [
+      _biFill(0, 0, 100, 14, '#9E1B1B'),
+      _biTxt(7, 4, 66, 6, '点击编辑标题', { fontSize: 46, textAlign: 'left', textColor: '#FFFFFF' }),
+      _biTxt(72, 5.3, 22, 3.5, 'FOUR PHOTOS', { fontSize: 22, fontWeight: 'normal', textAlign: 'right', textColor: '#E7C47A' }),
+      _biFill(0, 14, 100, 0.5, '#D8A954'),
+      _biImg(7, 19, 41, 32.5, { radius: 1.4 }),
+      _biImg(52, 19, 41, 32.5, { radius: 1.4 }),
+      _biImg(7, 54.5, 41, 32.5, { radius: 1.4 }),
+      _biImg(52, 54.5, 41, 32.5, { radius: 1.4 }),
+      _biFill(0, 93, 100, 7, '#9E1B1B'),
+      _biTxt(7, 94.2, 86, 4.5, '结尾金句 / 页脚（双击编辑）', { fontSize: 25, fontWeight: 'normal', textAlign: 'left', textColor: '#E7C47A' }),
+    ],
+  },
+  {
+    id: 'steps3_red_3x4', name: '三步流程 3:4', ratio: '3:4', background_color: '#FFFFFF', builtin: true,
+    placeholders: [
+      _biTxt(7, 4.5, 60, 6, '实施步骤', { fontSize: 46, textAlign: 'left' }),
+      _biFill(7, 11.5, 13, 0.8, '#9E1B1B'),
+      _biFill(15.5, 16, 9, 6.5, '#9E1B1B', { radius: 3.25 }),
+      _biTxt(15.5, 16, 9, 6.5, '1', { fontSize: 38, textColor: '#FFFFFF' }),
+      _biTxt(33, 16.8, 4, 5, '→', { fontSize: 36, textColor: '#C8973F' }),
+      _biTxt(7, 24.5, 26, 5.5, '步骤名称', { fontSize: 32 }),
+      _biImg(7, 32, 26, 37, { radius: 1.3 }),
+      _biTxt(7, 71, 26, 14, '双击输入步骤说明文字', { fontSize: 26, fontWeight: 'normal', textColor: '#6B5D52' }),
+      _biFill(45.5, 16, 9, 6.5, '#9E1B1B', { radius: 3.25 }),
+      _biTxt(45.5, 16, 9, 6.5, '2', { fontSize: 38, textColor: '#FFFFFF' }),
+      _biTxt(63, 16.8, 4, 5, '→', { fontSize: 36, textColor: '#C8973F' }),
+      _biTxt(37, 24.5, 26, 5.5, '步骤名称', { fontSize: 32 }),
+      _biImg(37, 32, 26, 37, { radius: 1.3 }),
+      _biTxt(37, 71, 26, 14, '双击输入步骤说明文字', { fontSize: 26, fontWeight: 'normal', textColor: '#6B5D52' }),
+      _biFill(75.5, 16, 9, 6.5, '#9E1B1B', { radius: 3.25 }),
+      _biTxt(75.5, 16, 9, 6.5, '3', { fontSize: 38, textColor: '#FFFFFF' }),
+      _biTxt(67, 24.5, 26, 5.5, '步骤名称', { fontSize: 32 }),
+      _biImg(67, 32, 26, 37, { radius: 1.3 }),
+      _biTxt(67, 71, 26, 14, '双击输入步骤说明文字', { fontSize: 26, fontWeight: 'normal', textColor: '#6B5D52' }),
+      _biFill(0, 93, 100, 7, '#9E1B1B'),
+      _biTxt(7, 94.2, 86, 4.5, '小红书配图 · 三步流程（页脚双击编辑）', { fontSize: 24, fontWeight: 'normal', textAlign: 'left', textColor: '#F7F0E4' }),
+    ],
+  },
+  {
+    id: 'biz3col_blue_3x4', name: '商务三栏 3:4', ratio: '3:4', background_color: '#FFFFFF', builtin: true,
+    placeholders: [
+      _biFill(0, 0, 100, 11, '#1F5AA6'),
+      _biTxt(7, 2.6, 86, 5.5, '1.3 双击编辑章节标题', { fontSize: 44, textAlign: 'left', textColor: '#FFFFFF' }),
+      _biTxt(7, 13, 86, 6.5, '以____为导向，以____为核心，双击编辑这段总体思路说明文字', { fontSize: 27, fontWeight: 'normal', textAlign: 'left', textColor: '#4A5568' }),
+      _biFill(7, 21, 26, 7, '#2B6CB8', { radius: 1.2 }),
+      _biTxt(7, 21, 26, 7, '指导思想', { fontSize: 31, textColor: '#FFFFFF' }),
+      _biTxt(8.5, 30, 23, 27, '· 双击输入\n  要点说明\n· 文字自动换行', { fontSize: 25, fontWeight: 'normal', textAlign: 'left', textColor: '#334155' }),
+      _biImg(8.5, 59, 23, 18, { radius: 0.9, fillColor: '#EAF1FB', fillOpacity: 100, borderColor: '#C9DCF5', borderOpacity: 100 }),
+      _biFill(37, 21, 26, 7, '#2B6CB8', { radius: 1.2 }),
+      _biTxt(37, 21, 26, 7, '实施路径', { fontSize: 31, textColor: '#FFFFFF' }),
+      _biTxt(38.5, 30, 23, 27, '· 双击输入\n  要点说明\n· 文字自动换行', { fontSize: 25, fontWeight: 'normal', textAlign: 'left', textColor: '#334155' }),
+      _biImg(38.5, 59, 23, 18, { radius: 0.9, fillColor: '#EAF1FB', fillOpacity: 100, borderColor: '#C9DCF5', borderOpacity: 100 }),
+      _biFill(67, 21, 26, 7, '#2B6CB8', { radius: 1.2 }),
+      _biTxt(67, 21, 26, 7, '保障机制', { fontSize: 31, textColor: '#FFFFFF' }),
+      _biTxt(68.5, 30, 23, 27, '· 双击输入\n  要点说明\n· 文字自动换行', { fontSize: 25, fontWeight: 'normal', textAlign: 'left', textColor: '#334155' }),
+      _biImg(68.5, 59, 23, 18, { radius: 0.9, fillColor: '#EAF1FB', fillOpacity: 100, borderColor: '#C9DCF5', borderOpacity: 100 }),
+      _biFill(7, 82, 26, 6, '#EAF1FB', { radius: 1.2 }),
+      _biTxt(7, 82, 26, 6, '明确为什么做', { fontSize: 25, fontWeight: 'normal', textColor: '#1F5AA6' }),
+      _biFill(37, 82, 26, 6, '#EAF1FB', { radius: 1.2 }),
+      _biTxt(37, 82, 26, 6, '解决如何做', { fontSize: 25, fontWeight: 'normal', textColor: '#1F5AA6' }),
+      _biFill(67, 82, 26, 6, '#EAF1FB', { radius: 1.2 }),
+      _biTxt(67, 82, 26, 6, '确保能落地', { fontSize: 25, fontWeight: 'normal', textColor: '#1F5AA6' }),
+      _biFill(0, 95, 100, 5, '#1F5AA6'),
     ],
   },
 ];
@@ -2460,11 +2655,25 @@ function renderTemplates() {
     const safeNameJs = JSON.stringify(tpl.name || '');
     const [arr, arcap] = ratioCss(tpl.ratio);
 
-    // 缩略图（按真实比例几何绘制）
+    // 缩略图（按真实比例 + 真实填充/文字色绘制，文字框无底色色块时用文字色淡显）
     let phs = '';
     (tpl.placeholders || []).forEach((ph, i) => {
-      const shade = 220 - (i % 5) * 24;
-      phs += `<div class="ph" style="left:${ph.x}%;top:${ph.y}%;width:${ph.width}%;height:${ph.height}%;background:rgba(${shade},${shade},${shade},.8);"></div>`;
+      let bg;
+      const fop = parseFloat(ph.fillOpacity);
+      if (isFinite(fop) && fop > 0) {
+        bg = colorWithAlpha(ph.fillColor || '#667eea', fop);
+      } else if (ph.type === 'text') {
+        bg = colorWithAlpha(ph.textColor || '#333333', 16);
+      } else {
+        const shade = 220 - (i % 5) * 24;
+        bg = `rgba(${shade},${shade},${shade},.8)`;
+      }
+      let rad = '';
+      const rr = parseFloat(ph.radius);
+      if (isFinite(rr) && rr > 0 && parseFloat(ph.width) > 0) {
+        rad = `;border-radius:${Math.min(50, rr / parseFloat(ph.width) * 100)}%`;
+      }
+      phs += `<div class="ph" style="left:${ph.x}%;top:${ph.y}%;width:${ph.width}%;height:${ph.height}%;background:${bg}${rad}"></div>`;
     });
 
     const star =
@@ -3044,6 +3253,13 @@ function previewEditorTemplate() {
     div.style.top = ph.y + '%';
     div.style.width = ph.width + '%';
     div.style.height = ph.height + '%';
+    // 圆角（radius 按画布宽度百分比存储，换算为相对自身宽度的 CSS 百分比）
+    {
+      const rad = parseFloat(ph.radius);
+      if (isFinite(rad) && rad > 0 && parseFloat(ph.width) > 0) {
+        div.style.borderRadius = Math.min(50, rad / parseFloat(ph.width) * 100) + '%';
+      }
+    }
     div.style.border = `1.5px dashed ${colorWithAlpha(s.borderColor, s.borderOpacity * 0.6)}`;
     div.style.backgroundColor = colorWithAlpha(s.fillColor, s.fillOpacity);
     div.style.boxSizing = 'border-box';
@@ -3355,6 +3571,13 @@ function renderEditor() {
     div.style.top = ph.y + '%';
     div.style.width = ph.width + '%';
     div.style.height = ph.height + '%';
+    // 圆角（radius 按画布宽度百分比存储，换算为相对自身宽度的 CSS 百分比）
+    {
+      const rad = parseFloat(ph.radius);
+      if (isFinite(rad) && rad > 0 && parseFloat(ph.width) > 0) {
+        div.style.borderRadius = Math.min(50, rad / parseFloat(ph.width) * 100) + '%';
+      }
+    }
     // 应用边框、填充、阴影样式
     div.style.borderColor = colorWithAlpha(s.borderColor, s.borderOpacity);
     div.style.backgroundColor = colorWithAlpha(s.fillColor, s.fillOpacity);
@@ -3575,6 +3798,7 @@ function defaultPhStyle() {
     fillColor: '#667eea', fillOpacity: 12,
     shadowColor: '#000000', shadowOpacity: 0,
     shadowX: 0, shadowY: 0, shadowBlur: 0,
+    radius: 0,
     // 文本框特有
     text: '双击编辑文字', fontSize: 48, fontWeight: 'bold',
     textAlign: 'center', textColor: '#333333', textOpacity: 100,
