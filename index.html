@@ -1108,7 +1108,7 @@ try {
     <div class="sub">上传 → 选模板 → 生成预览 → 确认修改 → 打包下载</div>
   </div>
   <div class="compat-badge" title="图片全部在本机浏览器处理，不上传到任何服务器">
-    本地离线 · 适配 Chrome/Edge 88+、Firefox 89+、Safari 15+（Windows/macOS/Linux）
+    适配 Chrome/Edge 88+、Firefox 89+、Safari 15+（Windows/macOS/Linux）
   </div>
 </header>
 
@@ -1171,6 +1171,7 @@ try {
       <div class="sets-panel-head">
         <h2 style="margin:0;"><span class="num">3</span> 配图方案（同一套素材，可一次排多套）</h2>
         <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-toggle-all" onclick="addSet()" title="新增一套方案（同一素材可生成多套不同排版）">＋ 添加一套方案</button>
           <button class="btn-toggle-all" id="btnManageSets" onclick="toggleManageMode()" title="批量选中方案：生成/删除/存为常用">☰ 方案管理</button>
           <button class="btn-toggle-all" id="btnToggleAll" onclick="toggleAllSets()" title="折叠/展开所有方案的模板列表">全部折叠 ▴</button>
         </div>
@@ -1206,7 +1207,6 @@ try {
           <button class="btn-outdir-change" onclick="chooseOutputDir()">选择输出文件夹</button>
         </div>
         <div class="export-row">
-          <button class="btn-add-set in-export" onclick="addSet()">＋ 添加一套方案</button>
           <button class="btn-export-zip" id="btnExportZip" onclick="exportAllZip()">📦 打包 ZIP 下载</button>
           <button class="btn-export-folder" id="btnExportFolder" onclick="exportAllFolder()">📁 保存到文件夹</button>
         </div>
