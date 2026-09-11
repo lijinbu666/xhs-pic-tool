@@ -11,10 +11,10 @@
    - 哈希是 64 位十六进制字符串，不含口令明文，查看源码看不到口令
    - 用「口令生成器.html」生成新口令后，复制它输出的代码行覆盖下面这行
    ============================================================ */
-const CURRENT_PASSWORD_HASH = 'c1d3ba9bd0bc42602fdeeace891f02eede40cea761763b7c6c47d34624d98867';
+const CURRENT_PASSWORD_HASH = '3eef65bb672661ae2cff53da1e3e36d87dd992baf9ea9f3a509d3ee8e0f8224f';
 // 模板库解锁码（单独发放给购买模板库的买家，与月度口令不同）
 // 月更方式同口令：用「口令生成器」里的模板库解锁码生成器算出新哈希，替换本行后重新部署
-const CURRENT_LIB_HASH = '858b679d10c896c933db528152e847fded0b9da320253a43f1f1d98665aa3391';
+const CURRENT_LIB_HASH = '8c2703f2eb125d3efb06d25eaa1c56f15b022005aaea075379718b77cf042a81';
 // 会话保持：首屏渲染前同步检查，命中则直接隐藏口令门（零闪烁）。哈希不符（已换月度口令）时不隐藏。
 try {
   if (localStorage.getItem('xhs_gate_hash') === CURRENT_PASSWORD_HASH) {
@@ -173,36 +173,146 @@ try {
   .btn-new-tpl:active { transform: translateY(0); }
 
   .tpl-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 10px;
   }
+  @media (max-width: 560px) {
+    .tpl-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  }
   .tpl-card {
-    border: 1.5px solid var(--border); border-radius: 10px; padding: 8px;
-    cursor: pointer; transition: all var(--ease); text-align: center;
-    background: var(--bg-surface);
+    position: relative; border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg-surface); cursor: pointer; transition: all var(--ease);
+    display: flex; flex-direction: column; overflow: visible;
   }
   .tpl-card:hover {
     border-color: var(--brand-300); box-shadow: var(--shadow-md); transform: translateY(-2px);
   }
-  .tpl-preview {
-    position: relative; width: 100%; background: var(--bg-hover); border-radius: var(--r-sm);
-    overflow: hidden; margin-bottom: 6px; aspect-ratio: 9/16;
+  /* 缩略图主体：按真实比例展示，不拉伸变形 */
+  .thumb-frame {
+    position: relative;
+    margin: 9px 9px 0; border-radius: 8px; overflow: hidden;
+    background:
+      linear-gradient(45deg, #eef1f6 25%, transparent 25%, transparent 75%, #eef1f6 75%),
+      linear-gradient(45deg, #eef1f6 25%, #f7f9fc 25%, #f7f9fc 75%, #eef1f6 75%);
+    background-size: 14px 14px; background-position: 0 0, 7px 7px;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 130px; padding: 6px;
+  }
+  .thumb-frame .tpl-thumb {
+    max-width: 100%; max-height: 230px; width: auto; height: auto;
+    border-radius: 5px; display: block; object-fit: contain; background: #fff;
+    box-shadow: 0 1px 4px rgba(15,23,42,.12);
+  }
+  .thumb-frame .tpl-preview {
+    position: relative; border-radius: 5px; overflow: hidden; background: var(--bg-hover);
+    box-shadow: 0 1px 4px rgba(15,23,42,.12);
+    width: min(100%, var(--arcap, 172px)); aspect-ratio: var(--arr, 3 / 4);
+    flex-shrink: 0;
   }
   .tpl-preview .ph {
     position: absolute; border: 1px solid rgba(255,255,255,.65);
   }
-  .tpl-card .tname { font-size: 12px; font-weight: 600; color: var(--text-1); line-height: 1.35; }
-  .tpl-card .tmeta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-  .tpl-card .tactions { display: flex; gap: 5px; justify-content: center; margin-top: 6px; }
-  /* L4 微型胶囊按钮（卡片内） */
-  .tpl-card .tactions button {
-    border: none; border-radius: var(--r-pill); padding: 4px 11px;
-    font-size: 11px; font-weight: 600; cursor: pointer; transition: all var(--ease);
+  .tpl-info { padding: 8px 10px 10px; }
+  .tpl-card .tname {
+    font-size: 12.5px; font-weight: 700; color: var(--text-1); line-height: 1.35;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .btn-edit { background: var(--bg-hover); color: var(--text-2); }
-  .btn-edit:hover { background: var(--brand-50); color: var(--brand-700); }
-  .btn-del { background: var(--red-100); color: var(--red-700); }
-  .btn-del:hover { background: var(--red-500); color: #fff; }
+  .tpl-card .tmeta { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+  /* 悬浮"加入方案"圆钮（卡片主体点击=编辑模板） */
+  .tpl-add-btn {
+    position: absolute; right: 12px; bottom: 44px; z-index: 4;
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: linear-gradient(120deg, var(--brand-500), var(--brand-600));
+    color: #fff; font-size: 22px; line-height: 1; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(102,126,234,.45); opacity: 0; transform: translateY(4px);
+    transition: all var(--ease); display: flex; align-items: center; justify-content: center;
+  }
+  .tpl-card:hover .tpl-add-btn { opacity: 1; transform: translateY(0); }
+  .tpl-add-btn:hover { transform: scale(1.08); }
+  @media (hover: none) { .tpl-add-btn { opacity: 1; transform: none; } }
+  /* ⋯ 收纳菜单 */
+  .card-menu-btn {
+    position: absolute; top: 6px; right: 6px; z-index: 5;
+    width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
+    background: rgba(255,255,255,.88); color: var(--text-2); font-size: 17px; line-height: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18); display: flex; align-items: center; justify-content: center;
+    padding: 0; font-weight: 700;
+  }
+  .card-menu-btn:hover, .card-menu-btn.on { background: #fff; color: var(--brand-700); }
+  .card-menu {
+    position: absolute; top: 40px; right: 6px; z-index: 30; min-width: 158px;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15,23,42,.18); overflow: hidden; display: none;
+  }
+  .card-menu.open { display: block; }
+  .card-menu button {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    min-height: 44px; padding: 0 14px; border: none; background: none;
+    font-size: 13px; font-weight: 600; color: var(--text-1); text-align: left; cursor: pointer;
+  }
+  .card-menu button:hover { background: var(--brand-50); }
+  .card-menu button.danger { color: var(--red-600); }
+  .card-menu button.danger:hover { background: var(--red-100); }
+  /* 进入编辑提示条（缩略图上悬浮） */
+  .thumb-edit-hint {
+    position: absolute; left: 15px; right: 15px; bottom: 15px; z-index: 3;
+    background: rgba(31,39,55,.78); color: #fff; font-size: 11.5px; font-weight: 600;
+    border-radius: var(--r-pill); padding: 5px 12px; text-align: center;
+    opacity: 0; transition: opacity var(--ease); pointer-events: none;
+  }
+  .tpl-card:hover .thumb-edit-hint { opacity: 1; }
+  /* 模板比例筛选栏 */
+  .tpl-filter-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tpl-filter-btn {
+    padding: 5px 12px; border: 1px solid var(--border); border-radius: var(--r-pill);
+    background: var(--bg-surface); color: var(--text-2); font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all var(--ease);
+  }
+  .tpl-filter-btn:hover { border-color: var(--brand-300); color: var(--brand-700); }
+  .tpl-filter-btn.active { background: var(--brand-500); color: #fff; border-color: var(--brand-500); }
+  /* 搜索 / 排序工具行 */
+  .tpl-tools { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .tpl-tools-row { display: flex; gap: 6px; align-items: center; }
+  .tpl-search {
+    flex: 1; min-width: 0; padding: 6px 10px 6px 28px; border: 1px solid var(--border);
+    border-radius: var(--r-pill); font-size: 12px; outline: none; transition: border-color var(--ease);
+    background: var(--bg-surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><line x1='16.5' y1='16.5' x2='21' y2='21'/></svg>") no-repeat 9px center;
+  }
+  .tpl-search:focus { border-color: var(--brand-400); }
+  .sort-mini {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--r-pill);
+    background: var(--bg-surface); color: var(--text-2); font-size: 11px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all var(--ease);
+  }
+  .sort-mini:hover { border-color: var(--brand-300); color: var(--brand-700); }
+  .sort-mini.active { background: var(--brand-500); color: #fff; border-color: var(--brand-500); }
+  /* 工具栏上的迷你图标钮（导出/导入） */
+  .tpl-mini-btn {
+    padding: 6px 10px; border: 1px solid var(--brand-200); border-radius: var(--r-md);
+    background: var(--brand-50); color: var(--brand-700); font-size: 12px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all var(--ease);
+  }
+  .tpl-mini-btn:hover { background: var(--brand-100); border-color: var(--brand-300); }
+  .tpl-toolbar-actions { display: flex; align-items: center; gap: 6px; }
+  /* 默认模板：琥珀色高亮 + 星标 */
+  .tpl-card.is-default { border-color: var(--amber-500, #f59e0b); box-shadow: 0 0 0 2px rgba(245,158,11,.25); }
+  .default-star {
+    position: absolute; top: 6px; left: 6px; z-index: 3; width: 22px; height: 22px;
+    border-radius: 50%; border: none; cursor: pointer; font-size: 12px; line-height: 22px;
+    background: rgba(255,255,255,.85); color: #cbd5e1; padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: all var(--ease);
+  }
+  .default-star:hover { transform: scale(1.12); color: var(--amber-500, #f59e0b); }
+  .default-star.on { color: var(--amber-500, #f59e0b); background: #fffbeb; }
+  .tpl-card.dragging { opacity: .45; border-style: dashed; }
+  .tpl-card.drag-over { border-color: var(--brand-500); box-shadow: var(--glow-brand); }
+  .drag-grip {
+    position: absolute; top: 10px; right: 42px; z-index: 5; font-size: 14px; color: #94a3b8;
+    cursor: grab; opacity: 0; transition: opacity var(--ease); user-select: none; line-height: 1;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  }
+  .tpl-card:hover .drag-grip { opacity: 1; }
+  .drag-grip:active { cursor: grabbing; }
 
   /* ===== 模板库分级（basic 基础 / full 模板库，未解锁带锁展示） ===== */
   /* 模板库解锁入口按钮 */
@@ -237,6 +347,7 @@ try {
     font-size: 22px; filter: drop-shadow(0 1px 2px rgba(255,255,255,.9));
   }
   .tpl-card.locked .tname { color: #9c6a35; }
+  .tpl-card.locked .thumb-edit-hint { background: rgba(194,104,24,.92); opacity: 1; }
 
   /* 模板库解锁弹窗 */
   .lib-overlay {
@@ -456,6 +567,34 @@ try {
   }
   .export-title { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 10px; }
   .export-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+  .export-row { display: flex; gap: 9px; flex-wrap: wrap; }
+  .export-row > * { flex: 1 1 0; min-width: 132px; }
+  .btn-add-set.in-export {
+    width: 100%; padding: 10px 12px; border: 1.5px dashed var(--green-400, #4ade80);
+    border-radius: var(--r-md); background: rgba(255,255,255,.65);
+    color: var(--green-700, #15803d); font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all var(--ease);
+  }
+  .btn-add-set.in-export:hover { background: #fff; border-color: var(--green-500); }
+  /* 输出位置条 */
+  .outdir-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: rgba(255,255,255,.75); border: 1px solid var(--green-100);
+    border-radius: var(--r-md); padding: 8px 11px; margin-bottom: 10px;
+    font-size: 12px; color: var(--text-2);
+  }
+  .outdir-bar .outdir-label { font-weight: 700; color: var(--text-1); flex-shrink: 0; }
+  .outdir-bar .outdir-path {
+    flex: 1; min-width: 120px; color: var(--text-2); word-break: break-all;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+  .btn-outdir-change {
+    flex-shrink: 0; border: 1px solid var(--brand-300); background: #fff;
+    color: var(--brand-700); border-radius: var(--r-pill); padding: 5px 13px;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--ease);
+  }
+  .btn-outdir-change:hover { background: var(--brand-50); }
+  .outdir-empty { color: var(--amber-700, #b45309); font-weight: 600; }
   .export-tip { font-size: 12px; color: var(--text-3); margin-top: 8px; line-height: 1.6; }
   .export-status { font-size: 12px; margin-top: 10px; color: var(--text-2); line-height: 1.7; }
   /* L1 大号按钮：品牌色 vs 成功色（落地导出语义） */
@@ -1047,8 +1186,8 @@ try {
     <h1>小红书配图便捷生成工具</h1>
     <div class="sub">上传 → 选模板 → 生成预览 → 确认修改 → 打包下载</div>
   </div>
-  <div class="compat-badge" title="纯浏览器运行，无需安装任何东西，断网也能用，双击本文件即可">
-    🔒 免安装版 · 双击即用 · 断网可用 · Chrome/Edge 88+、Firefox 89+、Safari 15+
+  <div class="compat-badge" title="图片全部在本机浏览器处理，不上传到任何服务器">
+    🔒 本地离线 · 适配 Chrome/Edge 88+、Firefox 89+、Safari 15+（Windows/macOS/Linux）
   </div>
 </header>
 
@@ -1077,11 +1216,28 @@ try {
     <div class="panel tpl-panel">
       <div class="tpl-toolbar">
         <h2 style="margin:0"><span class="num">2</span> 模板库</h2>
-        <button class="btn-new-tpl" onclick="exportTemplates()" title="导出全部自定义模板">📦 导出</button>
-        <button class="btn-new-tpl" onclick="document.getElementById('__tplImport').click()" title="导入 .xhs-tpl 文件">📥 导入</button>
-        <input type="file" id="__tplImport" accept=".json,.xhs-tpl" style="display:none" onchange="importTemplates(event)">
-        <button class="btn-new-tpl" onclick="openEditor(null)">+ 新建</button>
-        <button id="btnLibUnlock" onclick="openLibUnlock()" style="display:none"></button>
+        <div class="tpl-toolbar-actions">
+          <button class="tpl-mini-btn" onclick="exportTemplates()" title="导出全部自定义模板（换机 / 备份）">📤 导出</button>
+          <button class="tpl-mini-btn" onclick="document.getElementById('__tplImport').click()" title="从 .xhs-tpl 文件导入">📥 导入</button>
+          <input type="file" id="__tplImport" accept=".json,.xhs-tpl" style="display:none" onchange="importTemplates(event)">
+          <button id="btnLibUnlock" onclick="openLibUnlock()" style="display:none"></button>
+          <button class="btn-new-tpl" onclick="openEditor(null)">+ 新建</button>
+        </div>
+      </div>
+      <div class="tpl-tools">
+        <div class="tpl-tools-row">
+          <input type="text" class="tpl-search" id="tplSearch" placeholder="搜索模板名称…" oninput="onTplSearch(this.value)">
+        </div>
+        <div class="tpl-tools-row">
+          <button class="sort-mini active" id="sortManual" onclick="setTplSort('manual')" title="拖动卡片可调整顺序">⇅ 手动排序</button>
+          <button class="sort-mini" id="sortRecent" onclick="setTplSort('recent')">🕘 最近使用</button>
+        </div>
+      </div>
+      <div class="tpl-filter-bar">
+        <button class="tpl-filter-btn active" data-filter="all" onclick="setTplFilter('all')">全部</button>
+        <button class="tpl-filter-btn" data-filter="1:1" onclick="setTplFilter('1:1')">1:1</button>
+        <button class="tpl-filter-btn" data-filter="3:4" onclick="setTplFilter('3:4')">3:4</button>
+        <button class="tpl-filter-btn" data-filter="9:16" onclick="setTplFilter('9:16')">9:16</button>
       </div>
       <div class="tpl-scroll">
         <div class="tpl-grid" id="tplGrid"></div>
@@ -1122,13 +1278,20 @@ try {
         </div>
       </div>
       <div id="setsList"></div>
-      <button class="btn-add-set" onclick="addSet()">＋ 添加一套方案</button>
       <div class="master-export">
         <div class="export-title">全部方案生成并检查完毕后，统一导出：</div>
-        <div class="export-actions">
+        <div class="outdir-bar" id="outdirBar" style="display:none">
+          <span class="outdir-label">输出位置：</span>
+          <span class="outdir-path outdir-empty" id="outdirPath">未设置（首次导出时会弹出系统文件夹选择框）</span>
+          <button class="btn-outdir-change" onclick="chooseOutputDir()">选择输出文件夹</button>
+        </div>
+        <div class="export-row">
+          <button class="btn-add-set in-export" onclick="addSet()">＋ 添加一套方案</button>
           <button class="btn-export-zip" id="btnExportZip" onclick="exportAllZip()">📦 打包 ZIP 下载</button>
-          <button class="btn-export-folder" id="btnExportFolder" onclick="exportAllFolder()">📁 保存到桌面文件夹</button>
-          <button class="btn-open-folder" id="btnOpenFolder" onclick="openExportFolder()" style="display:none">📂 打开文件夹</button>
+          <button class="btn-export-folder" id="btnExportFolder" onclick="exportAllFolder()">📁 保存到文件夹</button>
+        </div>
+        <div class="export-actions" style="margin-top:9px;">
+          <button class="btn-open-folder" id="btnOpenFolder" onclick="openExportFolder()" style="display:none">📂 打开输出文件夹</button>
         </div>
         <div id="exportStatus" class="export-status"></div>
       </div>
@@ -1540,6 +1703,12 @@ setTimeout(checkUpdate, 2000);
 const state = {
   images: [],
   templates: [],
+  // 模板库面板：搜索 / 比例筛选 / 排序（手动拖拽 or 最近使用）
+  tplSearch: '',
+  tplFilter: 'all',
+  tplSort: (function () { try { return localStorage.getItem('tpl_sort_mode') === 'recent' ? 'recent' : 'manual'; } catch (e) { return 'manual'; } })(),
+  tplMeta: { order: [], last_used: {}, default_id: '' }, // 设备级元数据（顺序/最近使用/默认模板，localStorage 持久化）
+  _defaultScrolled: false,
   // 多套配图方案：每套独立排模板、生成预览、检查替换
   sets: [
     { name: '方案1', queue: [], batchId: null, pages: [], collapsed: false },
@@ -2165,6 +2334,74 @@ async function submitLibUnlock() {
   });
 })();
 
+// ====== 模板设备级元数据：手动顺序 / 最近使用 / 默认模板（localStorage 持久化） ======
+const TPL_META_KEY = 'xhs_tpl_meta_v1';
+function loadTplMeta() {
+  let meta = { order: [], last_used: {}, default_id: '' };
+  try {
+    const raw = JSON.parse(localStorage.getItem(TPL_META_KEY) || 'null');
+    if (raw && typeof raw === 'object') {
+      meta = {
+        order: Array.isArray(raw.order) ? raw.order : [],
+        last_used: raw.last_used && typeof raw.last_used === 'object' ? raw.last_used : {},
+        default_id: typeof raw.default_id === 'string' ? raw.default_id : '',
+      };
+    }
+  } catch (e) {}
+  // 以当前模板清单为准清洗：删掉已不存在/重复的 id，新增模板补到末尾
+  const ids = new Set(state.templates.map(t => t.id));
+  const seen = new Set();
+  meta.order = meta.order.filter(id => {
+    if (!ids.has(id) || seen.has(id)) return false;
+    seen.add(id); return true;
+  });
+  state.templates.forEach(t => { if (!seen.has(t.id)) { meta.order.push(t.id); seen.add(t.id); } });
+  Object.keys(meta.last_used).forEach(id => { if (!ids.has(id)) delete meta.last_used[id]; });
+  if (meta.default_id && !ids.has(meta.default_id)) meta.default_id = '';
+  state.tplMeta = meta;
+  saveTplMeta();
+  return meta;
+}
+function saveTplMeta() {
+  try { localStorage.setItem(TPL_META_KEY, JSON.stringify(state.tplMeta)); } catch (e) {}
+}
+
+// 完整顺序：保存过的 order 优先，新增模板按自然顺序补在后面
+function orderedTemplates() {
+  const byId = new Map(state.templates.map(t => [t.id, t]));
+  const out = [];
+  const seen = new Set();
+  (state.tplMeta.order || []).forEach(id => {
+    if (byId.has(id) && !seen.has(id)) { out.push(byId.get(id)); seen.add(id); }
+  });
+  state.templates.forEach(t => { if (!seen.has(t.id)) out.push(t); });
+  return out;
+}
+
+// 比例筛选 + 名称搜索 + 最近使用排序
+function visibleTemplates() {
+  let list = orderedTemplates();
+  if (state.tplFilter !== 'all') list = list.filter(t => t.ratio === state.tplFilter);
+  const kw = (state.tplSearch || '').trim().toLowerCase();
+  if (kw) list = list.filter(t => (t.name || '').toLowerCase().includes(kw));
+  if (state.tplSort === 'recent') {
+    const lu = state.tplMeta.last_used || {};
+    list = list.slice().sort((a, b) => (lu[b.id] || 0) - (lu[a.id] || 0));
+  }
+  return list;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// 比例 → [CSS aspect-ratio 值, 缩略图最大宽度 px（按最大高 230px 折算）]
+function ratioCss(ratio) {
+  const m = String(ratio || '').split(':').map(Number);
+  if (m.length === 2 && m[0] > 0 && m[1] > 0) return [`${m[0]} / ${m[1]}`, Math.round(230 * m[0] / m[1])];
+  return ['3 / 4', 172];
+}
+
 async function loadTemplates() {
   // 注意：归属只能以代码里的 BUILTIN_TEMPLATES 定义为准；
   // localStorage / 导入文件里的记录可能被买家伪造 builtin/library 字段，因此自定义记录一律强制 basic
@@ -2184,45 +2421,234 @@ async function loadTemplates() {
       image_count: tplImageCount(t),
     })),
   ];
+  loadTplMeta();
+  const sm = document.getElementById('sortManual');
+  const sr = document.getElementById('sortRecent');
+  if (sm) sm.classList.toggle('active', state.tplSort === 'manual');
+  if (sr) sr.classList.toggle('active', state.tplSort === 'recent');
   renderTemplates();
   renderLibEntry();
+  // 默认模板：进入主页时高亮并滚动到可视区（每次打开页面仅一次）
+  if (!state._defaultScrolled && state.tplMeta.default_id) {
+    state._defaultScrolled = true;
+    setTimeout(() => {
+      const el = document.querySelector('.tpl-card[data-id="' + state.tplMeta.default_id + '"]');
+      if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 300);
+  }
 }
 
 function renderTemplates() {
   const grid = document.getElementById('tplGrid');
   grid.innerHTML = '';
-  state.templates.forEach(tpl => {
+  const list = visibleTemplates();
+  if (!list.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px 10px;color:var(--text-3);font-size:12px;grid-column:1/-1;">暂无匹配的模板</div>';
+    return;
+  }
+  list.forEach(tpl => {
     const locked = isLockedTpl(tpl);
-    // full 模板即使已解锁也不提供「编辑」（内置模板编辑=另存为自定义，等于复制传播）
-    const canEdit = !locked && tpl.library !== 'full';
+    const isFull = tpl.library === 'full';
+    const isDefault = state.tplMeta.default_id === tpl.id;
     const card = document.createElement('div');
-    card.className = 'tpl-card' + (locked ? ' locked' : '');
+    card.className = 'tpl-card' + (locked ? ' locked' : '') + (isDefault ? ' is-default' : '');
+    card.dataset.id = tpl.id;
     card.title = locked ? '模板库需解锁后使用，请联系卖家' : '';
+    // 主操作：点卡片=进编辑器（自定义/basic）；full 不可编辑，已解锁则直接加入方案；锁定则拦截弹解锁窗
     card.onclick = () => {
       if (locked) { toast('模板库需解锁后使用，请联系卖家', 'info'); openLibUnlock(); }
-      else addToQueue(tpl);
+      else if (isFull) addToQueue(tpl);
+      else openEditor(tpl.id);
     };
 
-    let preview = '<div class="tpl-preview">';
-    if (locked) {
-      preview += '<span class="tpl-lock-badge">🔒 模板库</span><div class="tpl-lock-mask"><span>🔒</span></div>';
-    }
-    tpl.placeholders.forEach((ph, i) => {
-      const shade = 220 - i * 28;
-      preview += `<div class="ph" style="left:${ph.x}%;top:${ph.y}%;width:${ph.width}%;height:${ph.height}%;background:rgb(${shade},${shade},${shade});"></div>`;
+    const safeName = escapeHtml(tpl.name || '');
+    const safeNameJs = JSON.stringify(tpl.name || '');
+    const [arr, arcap] = ratioCss(tpl.ratio);
+
+    // 缩略图（按真实比例几何绘制）
+    let phs = '';
+    (tpl.placeholders || []).forEach((ph, i) => {
+      const shade = 220 - (i % 5) * 24;
+      phs += `<div class="ph" style="left:${ph.x}%;top:${ph.y}%;width:${ph.width}%;height:${ph.height}%;background:rgba(${shade},${shade},${shade},.8);"></div>`;
     });
-    preview += '</div>';
+    const lockBadge = locked ? '<span class="tpl-lock-badge">🔒 模板库</span>' : '';
+    const lockMask = locked ? '<div class="tpl-lock-mask"><span>🔒</span></div>' : '';
+
+    // full 模板不提供星标 / ⋯菜单 / 拖拽手柄（不可改名、复制、删除、参与管理，防传播）
+    const star = isFull ? '' :
+      `<button class="default-star ${isDefault ? 'on' : ''}" title="${isDefault ? '取消默认模板' : '设为默认模板（进入页面时定位到此）'}"
+        onclick="event.stopPropagation();toggleDefault('${tpl.id}')">★</button>`;
+    const grip = (!locked && !isFull && state.tplSort === 'manual') ? '<span class="drag-grip" title="拖动排序">⠿</span>' : '';
+
+    let menuItems = '';
+    if (!isFull) {
+      if (tpl.is_custom) {
+        menuItems += `<button onclick="event.stopPropagation();renameTemplate('${tpl.id}',${safeNameJs})"><span>✏️</span>重命名</button>`;
+      }
+      menuItems += `<button onclick="event.stopPropagation();copyTemplate('${tpl.id}')"><span>📋</span>复制</button>`;
+      if (tpl.is_custom) {
+        menuItems += `<button class="danger" onclick="event.stopPropagation();deleteTemplate('${tpl.id}')"><span>🗑</span>删除</button>`;
+      }
+    }
+    const menu = isFull ? '' :
+      `<button class="card-menu-btn" title="更多操作" onclick="event.stopPropagation();toggleCardMenu('${tpl.id}',event)">⋯</button>
+       <div class="card-menu" id="cardMenu_${tpl.id}">${menuItems}</div>`;
+
+    const addBtn = locked ? '' :
+      `<button class="tpl-add-btn" title="添加到当前方案" onclick="event.stopPropagation();addTemplateToQueue('${tpl.id}')">＋</button>`;
+    const hint = locked ? '🔒 模板库需解锁' : (isFull ? '点击加入方案' : '点击编辑模板');
 
     card.innerHTML = `
-      ${preview}
-      <div class="tname">${tpl.name}</div>
-      <div class="tmeta">${tplImageCount(tpl)}图位</div>
-      <div class="tactions">
-        ${canEdit ? `<button class="btn-edit" onclick="event.stopPropagation();openEditor('${tpl.id}')">编辑</button>` : ''}
-        ${tpl.is_custom ? `<button class="btn-del" onclick="event.stopPropagation();deleteTemplate('${tpl.id}')">删除</button>` : ''}
+      ${lockBadge}
+      ${star}
+      ${grip}
+      ${menu}
+      <div class="thumb-frame">
+        <div class="tpl-preview" style="--arr:${arr};--arcap:${arcap}px;">${phs}${lockMask}</div>
+        <span class="thumb-edit-hint">${hint}</span>
+      </div>
+      ${addBtn}
+      <div class="tpl-info">
+        <div class="tname">${safeName}</div>
+        <div class="tmeta">${tpl.ratio || '3:4'} · ${tplImageCount(tpl)} 图位</div>
       </div>`;
+
+    if (!locked && !isFull && state.tplSort === 'manual') attachCardDrag(card);
     grid.appendChild(card);
   });
+}
+
+function addTemplateToQueue(id) {
+  const tpl = state.templates.find(t => t.id === id);
+  if (tpl) addToQueue(tpl);
+}
+
+// ⋯ 菜单：单开 + 点外部关闭
+function toggleCardMenu(id, ev) {
+  const cur = document.getElementById('cardMenu_' + id);
+  if (!cur) return;
+  const willOpen = !cur.classList.contains('open');
+  closeAllCardMenus();
+  if (willOpen) {
+    cur.classList.add('open');
+    const btn = ev && ev.currentTarget;
+    if (btn) btn.classList.add('on');
+  }
+}
+function closeAllCardMenus() {
+  document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.card-menu-btn.on').forEach(b => b.classList.remove('on'));
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.card-menu') && !e.target.closest('.card-menu-btn')) closeAllCardMenus();
+});
+
+function setTplFilter(r) {
+  state.tplFilter = r;
+  document.querySelectorAll('.tpl-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === r);
+  });
+  renderTemplates();
+}
+function onTplSearch(v) {
+  state.tplSearch = v;
+  renderTemplates();
+}
+function setTplSort(mode) {
+  state.tplSort = mode;
+  try { localStorage.setItem('tpl_sort_mode', mode); } catch (e) {}
+  document.getElementById('sortManual').classList.toggle('active', mode === 'manual');
+  document.getElementById('sortRecent').classList.toggle('active', mode === 'recent');
+  renderTemplates();
+}
+
+// 设为 / 取消默认模板（进入主页时高亮+滚动定位）
+function toggleDefault(id) {
+  state.tplMeta.default_id = state.tplMeta.default_id === id ? '' : id;
+  saveTplMeta();
+  renderTemplates();
+}
+
+// 记录最近使用（模板加入方案时）
+function markTemplateUsed(id) {
+  state.tplMeta.last_used = state.tplMeta.last_used || {};
+  state.tplMeta.last_used[id] = Math.floor(Date.now() / 1000);
+  saveTplMeta();
+}
+
+function renameTemplate(id, oldName) {
+  const name = prompt('输入新的模板名称（1-30 字）', oldName || '');
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 30) { toast('名称需为 1-30 个字符', 'error'); return; }
+  const customs = loadCustomTemplates();
+  const t = customs.find(x => x.id === id);
+  if (!t) { toast('仅自定义模板可以重命名', 'error'); return; }
+  t.name = trimmed;
+  saveCustomTemplates(customs);
+  toast('已重命名');
+  loadTemplates();
+}
+
+function copyTemplate(id) {
+  const src = state.templates.find(t => t.id === id);
+  if (!src) return;
+  if (src.library === 'full') { toast('模板库模板仅供使用，不支持复制', 'info'); return; }
+  const clone = JSON.parse(JSON.stringify(src));
+  clone.id = 'custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  clone.name = (src.name || '模板') + ' 副本';
+  if (clone.name.length > 30) clone.name = clone.name.slice(0, 30);
+  delete clone.builtin; delete clone.library; // 复制件一律为买家自定义（basic）
+  clone.is_custom = true;
+  const customs = loadCustomTemplates();
+  customs.push(clone);
+  saveCustomTemplates(customs);
+  toast('已复制，可在列表中编辑');
+  loadTemplates();
+}
+
+// ===== 卡片拖拽排序（手动模式） =====
+let _dragTplId = null;
+function attachCardDrag(card) {
+  card.draggable = true;
+  card.addEventListener('dragstart', e => {
+    // 从按钮上起拖不触发，避免影响点击
+    if (e.target.closest('button, input, a')) { e.preventDefault(); return; }
+    _dragTplId = card.dataset.id;
+    card.classList.add('dragging');
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', _dragTplId); } catch (err) {}
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.tpl-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    _dragTplId = null;
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!_dragTplId || _dragTplId === card.dataset.id) return;
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    if (!_dragTplId || _dragTplId === card.dataset.id) return;
+    reorderTemplates(_dragTplId, card.dataset.id);
+  });
+}
+
+// 在主顺序数组中把 srcId 移到 targetId 前（筛选/搜索视图下同样正确）
+function reorderTemplates(srcId, targetId) {
+  const order = orderedTemplates().map(t => t.id);
+  const from = order.indexOf(srcId);
+  if (from < 0) return;
+  order.splice(from, 1);
+  let to = order.indexOf(targetId);
+  if (to < 0) to = order.length;
+  order.splice(to, 0, srcId);
+  state.tplMeta.order = order;
+  saveTplMeta();
+  renderTemplates();
 }
 
 async function deleteTemplate(id) {
@@ -2289,6 +2715,7 @@ function addToQueue(tpl) {
   });
   invalidateSet(s);
   s.collapsed = false;  // 新添加时自动展开，让用户看到
+  markTemplateUsed(tpl.id); // 最近使用排序依据
   renderSets();
   toast(`已添加到${s.name}`, 'info');
 }
@@ -2340,7 +2767,7 @@ function renderSets() {
 
     // 模板队列（可折叠部分）
     const queueHtml = s.queue.length === 0
-      ? '<div class="queue-empty">队列为空，请点击左侧模板添加</div>'
+      ? '<div class="queue-empty">队列为空，请在左侧模板库点 ＋ 添加</div>'
       : s.queue.map((item, qi) => `
         <div class="queue-item">
           <span class="qnum">${qi + 1}</span>
@@ -3920,6 +4347,97 @@ async function exportAllZip() {
   }
 }
 
+// ====== 输出文件夹（Chrome/Edge 文件系统 API，IndexedDB 记忆授权句柄） ======
+const outCfg = { mode: 'loading', name: '', handle: null };
+const OUTDIR_NAME_KEY = 'xhs_outdir_name';
+function idbOutDir(mode, handle) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('xhs_tool', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('kv');
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction('kv', mode === 'get' ? 'readonly' : 'readwrite');
+      const rq = mode === 'get' ? tx.objectStore('kv').get('outdir_handle') : tx.objectStore('kv').put(handle, 'outdir_handle');
+      rq.onsuccess = () => resolve(mode === 'get' ? rq.result || null : true);
+      rq.onerror = () => reject(rq.error);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+function updateOutdirBar(granted) {
+  const pathEl = document.getElementById('outdirPath');
+  const btn = document.querySelector('.btn-outdir-change');
+  if (!pathEl) return;
+  if (outCfg.handle && outCfg.name) {
+    pathEl.textContent = granted
+      ? '浏览器授权文件夹：' + outCfg.name
+      : `授权待确认：${outCfg.name}（导出或点右侧按钮时重新授权）`;
+    pathEl.classList.toggle('outdir-empty', !granted);
+  } else {
+    pathEl.textContent = '未设置（首次导出时会弹出系统文件夹选择框）';
+    pathEl.classList.add('outdir-empty');
+  }
+  if (btn) btn.textContent = (outCfg.handle && outCfg.name) ? '更改文件夹' : '选择输出文件夹';
+}
+async function initOutputDir() {
+  const bar = document.getElementById('outdirBar');
+  // Safari/Firefox 等不支持自选文件夹：整条隐藏，导出时自动走 ZIP
+  if (!window.showDirectoryPicker) { outCfg.mode = 'download'; if (bar) bar.style.display = 'none'; return; }
+  outCfg.mode = 'webfs';
+  try {
+    outCfg.handle = await idbOutDir('get');
+    outCfg.name = (function () { try { return localStorage.getItem(OUTDIR_NAME_KEY) || ''; } catch (e) { return ''; } })();
+    let granted = false;
+    if (outCfg.handle && outCfg.name) {
+      try { granted = (await outCfg.handle.queryPermission({ mode: 'readwrite' })) === 'granted'; } catch (e) {}
+    }
+    updateOutdirBar(granted);
+  } catch (e) { /* IndexedDB 不可用则按未设置处理 */ }
+  if (bar) bar.style.display = 'flex';
+}
+async function chooseOutputDir() {
+  if (!window.showDirectoryPicker) {
+    toast('当前浏览器不支持自选文件夹，将下载到浏览器默认目录；Chrome/Edge 可直接选择文件夹', 'info');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { toast('未获得文件夹写入授权', 'error'); return; }
+    outCfg.handle = handle; outCfg.name = handle.name;
+    try {
+      await idbOutDir('set', handle);
+      localStorage.setItem(OUTDIR_NAME_KEY, handle.name);
+    } catch (e) {}
+    updateOutdirBar(true);
+    toast('输出文件夹已记住：' + handle.name);
+  } catch (e) {
+    if (e && e.name !== 'AbortError') toast('选择失败: ' + (e.message || e), 'error');
+  }
+}
+// 取已授权的输出文件夹句柄；未授权时在用户点击手势内请求授权
+async function ensureOutdirHandle() {
+  if (!outCfg.handle) {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') throw new Error('未获得文件夹写入授权');
+    outCfg.handle = handle; outCfg.name = handle.name;
+    try {
+      await idbOutDir('set', handle);
+      localStorage.setItem(OUTDIR_NAME_KEY, handle.name);
+    } catch (e) {}
+    updateOutdirBar(true);
+  } else {
+    let perm;
+    try { perm = await outCfg.handle.queryPermission({ mode: 'readwrite' }); } catch (e) { perm = 'prompt'; }
+    if (perm !== 'granted') {
+      perm = await outCfg.handle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') throw new Error('AUTH_EXPIRED');
+    }
+  }
+  return outCfg.handle;
+}
+
 async function exportAllFolder() {
   const sets = generatedSets();
   if (!sets.length) { toast('请先生成预览', 'error'); return; }
@@ -3930,7 +4448,7 @@ async function exportAllFolder() {
     return exportAllZip();
   }
   try {
-    const root = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const root = await ensureOutdirHandle();
     const stamp = timestampName();
     const out = await root.getDirectoryHandle(stamp, { create: true });
     let total = 0;
@@ -3946,14 +4464,18 @@ async function exportAllFolder() {
       }
       detail.push(`${set.name}（${set.pages.length}张）`);
     }
-    statusEl.innerHTML = `✅ 已保存 <b>${total}</b> 张到你选择文件夹中的 <b>${stamp}</b> 文件夹<br>包含：${detail.join('、')}`;
-    // 记住所选文件夹，供「打开文件夹」按钮重新定位
-    window.__exportDirHandle = root;
+    statusEl.innerHTML = `✅ 已保存 <b>${total}</b> 张到 <b>${outCfg.name || '所选文件夹'}</b> 中的 <b>${stamp}</b> 文件夹<br>包含：${detail.join('、')}`;
     const ob = document.getElementById('btnOpenFolder');
     if (ob) ob.style.display = '';
     toast('已保存到文件夹');
   } catch (err) {
     if (err && err.name === 'AbortError') { statusEl.textContent = ''; return; }
+    if (err && err.message === 'AUTH_EXPIRED') {
+      statusEl.textContent = '';
+      toast('文件夹授权已失效，请点「更改文件夹」重新授权', 'info', 4000);
+      updateOutdirBar(false);
+      return;
+    }
     statusEl.textContent = '';
     // 常见：Chrome showDirectoryPicker 拒绝含系统文件的文件夹（如桌面、我的文档）
     // 此时自动降级为 ZIP 下载，不让用户白跑一趟
@@ -3965,10 +4487,10 @@ async function exportAllFolder() {
 
 // 打开上次保存的文件夹：重新弹出定位到该文件夹的系统对话框（网页无法直接调起资源管理器）
 async function openExportFolder() {
-  const h = window.__exportDirHandle;
-  if (!h || !window.showDirectoryPicker) { toast('请先「保存到桌面文件夹」成功后再打开', 'info'); return; }
+  if (!window.showDirectoryPicker) { toast('当前浏览器不支持自选文件夹，请用 ZIP 下载', 'info'); return; }
+  if (!outCfg.handle) { toast('请先「保存到文件夹」成功后再打开', 'info'); return; }
   try {
-    await window.showDirectoryPicker({ startIn: h });
+    await window.showDirectoryPicker({ startIn: outCfg.handle });
   } catch (e) { /* 用户取消 */ }
 }
 
@@ -3991,6 +4513,7 @@ const __restored = restoreSession();
 renderSets();
 refreshPresetSelect();
 loadTemplates();
+initOutputDir();
 if (__restored && (state.images.length || state.sets.some(s => s.queue.length))) {
   toast('已恢复上次的图片与方案');
 }
